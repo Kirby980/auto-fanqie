@@ -41,10 +41,34 @@ if (args[0] === 'validate') {
 }
 
 if (args[0] === 'publish') {
-    // Run the create_chapter.js script directly via Node
-    const createChapterScript = path.join(__dirname, '../fanqie-test/create_chapter.js');
-    const result = spawnSync('node', [createChapterScript, ...args.slice(1)], { stdio: 'inherit' });
-    process.exit(result.status || 0);
+    let engine = 'node';
+    let publishArgs = [];
+
+    // Parse out --engine if present
+    for (let i = 1; i < args.length; i++) {
+        if (args[i] === '--engine') {
+            engine = args[i + 1];
+            i++; // skip the value
+        } else if (args[i].startsWith('--engine=')) {
+            engine = args[i].split('=')[1];
+        } else {
+            publishArgs.push(args[i]);
+        }
+    }
+
+    if (engine === 'go') {
+        // Run the Go script
+        const goScript = path.join(__dirname, '../fanqie-go/main.go');
+        console.log(`🚀 Using Go engine to publish...`);
+        const result = spawnSync('go', ['run', goScript, ...publishArgs], { stdio: 'inherit' });
+        process.exit(result.status || 0);
+    } else {
+        // Run the Node.js script (default)
+        console.log(`🚀 Using Node.js engine to publish...`);
+        const createChapterScript = path.join(__dirname, '../fanqie-test/create_chapter.js');
+        const result = spawnSync('node', [createChapterScript, ...publishArgs], { stdio: 'inherit' });
+        process.exit(result.status || 0);
+    }
 }
 
 showHelp();
@@ -65,6 +89,7 @@ Validate Options:
   --minHan <number>                      Minimum Chinese characters (default: 3000)
 
 Publish Options:
+  --engine <node|go>                     Choose the runtime engine (default: node)
   --novel "Novel Name"                   Name of the novel
   --volume "Volume Name"                 Name of the volume
   --title "Chapter Title"                Chapter title

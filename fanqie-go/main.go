@@ -1,0 +1,275 @@
+package main
+
+import (
+	"flag"
+	"fmt"
+	"log"
+	"os"
+	"path/filepath"
+	"time"
+
+	"github.com/playwright-community/playwright-go"
+)
+
+func main() {
+	var novelName, targetVolumeName, chapterTitle, contentFile string
+
+	flag.StringVar(&novelName, "novel", "重生1982：我有一片禁忌海", "Name of the novel")
+	flag.StringVar(&targetVolumeName, "volume", "第四卷：新的开始", "Name of the volume")
+	flag.StringVar(&chapterTitle, "title", "", "Chapter title")
+	flag.StringVar(&contentFile, "file", "", "File to read content from")
+	flag.Parse()
+
+	fmt.Printf("🚀 启动浏览器...\n    书名: %s\n    卷名: %s\n    标题: %s\n    内容文件: %s\n\n",
+		novelName, targetVolumeName, chapterTitle, contentFile)
+
+	err := playwright.Install()
+	if err != nil {
+		log.Printf("提示: %v (可能已安装)", err)
+	}
+
+	pw, err := playwright.Run()
+	if err != nil {
+		log.Fatalf("❌ 无法启动 Playwright: %v", err)
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatalf("❌ 无法获取用户主目录: %v", err)
+	}
+	userDataDir := filepath.Join(homeDir, ".playwright", "fanqie-profile")
+
+	// 启动本地 Chrome（防检测）
+	context, err := pw.Chromium.LaunchPersistentContext(userDataDir, playwright.BrowserTypeLaunchPersistentContextOptions{
+		Headless: playwright.Bool(false),
+		Channel:  playwright.String("chrome"),
+		Viewport: &playwright.Size{Width: 1280, Height: 720},
+		Args: []string{
+			"--disable-blink-features=AutomationControlled",
+			"--disable-infobars",
+		},
+	})
+	if err != nil {
+		log.Fatalf("❌ 无法启动持久化浏览器上下文: %v", err)
+	}
+	defer context.Close()
+
+	var page playwright.Page
+	if len(context.Pages()) > 0 {
+		page = context.Pages()[0]
+	} else {
+		page, err = context.NewPage()
+		if err != nil {
+			log.Fatalf("❌ 无法创建新页面: %v", err)
+		}
+	}
+
+	// 注入反爬脚本
+	err = page.AddInitScript(playwright.Script{
+		Content: playwright.String("Object.defineProperty(navigator, 'webdriver', { get: () => undefined });"),
+	})
+	if err != nil {
+		log.Printf("⚠️ 注入反爬脚本失败: %v", err)
+	}
+
+	fmt.Println("🌐 访问番茄小说作家后台...")
+	_, err = page.Goto("https://writer.fanqienovel.com/workspace", playwright.PageGotoOptions{
+		Timeout: playwright.Float(60000),
+	})
+	if err != nil {
+		log.Fatalf("❌ 无法访问作家后台: %v", err)
+	}
+
+	fmt.Println("⏳ 等待页面加载（如果需要登录，请在此期间完成登录）...")
+	_, err = page.WaitForSelector("text=我的小说", playwright.PageWaitForSelectorOptions{
+		Timeout: playwright.Float(60000),
+	})
+	if err != nil {
+		log.Fatalf("❌ 登录超时或页面未正确加载: %v", err)
+	}
+
+	fmt.Printf("📖 查找小说: %s 并点击章节管理...\n", novelName)
+	novelCard := page.Locator("div").Filter(playwright.LocatorFilterOptions{HasText: novelName}).Last()
+	chapterManageBtn := novelCard.GetByText("章节管理").First()
+	if err := chapterManageBtn.Click(); err != nil {
+		log.Fatalf("❌ 点击章节管理失败: %v", err)
+	}
+
+	fmt.Println("👉 正在进入章节管理页面...")
+	_, err = page.WaitForSelector("text=新建章节", playwright.PageWaitForSelectorOptions{
+		Timeout: playwright.Float(30000),
+	})
+	if err != nil {
+		log.Fatalf("❌ 章节管理页面加载超时: %v", err)
+	}
+
+	fmt.Printf("🔍 检查当前分卷是否为: %s\n", targetVolumeName)
+	volumeDropdown := page.Locator(".arco-select").First()
+	if err := volumeDropdown.Click(); err != nil {
+		log.Fatalf("❌ 点击分卷下拉框失败: %v", err)
+	}
+	time.Sleep(1 * time.Second)
+
+	volumeOption := page.Locator(".arco-select-option").Filter(playwright.LocatorFilterOptions{HasText: targetVolumeName})
+	volumeExists, _ := volumeOption.IsVisible()
+
+	if volumeExists {
+		fmt.Printf("✅ 找到分卷: %s，直接选择\n", targetVolumeName)
+		if err := volumeOption.Click(); err != nil {
+			log.Fatalf("❌ 选择分卷失败: %v", err)
+		}
+	} else {
+		fmt.Printf("⚠️ 未找到分卷: %s，准备新建分卷...\n", targetVolumeName)
+		// 关闭下拉框
+		page.Mouse().Click(0, 0)
+		time.Sleep(500 * time.Millisecond)
+
+		fmt.Println("👉 点击“编辑分卷”按钮...")
+		if err := page.Locator("button").Filter(playwright.LocatorFilterOptions{HasText: "编辑分卷"}).Click(); err != nil {
+			log.Fatalf("❌ 点击编辑分卷失败: %v", err)
+		}
+
+		_, err = page.WaitForSelector(`div.arco-modal:has-text("分卷")`, playwright.PageWaitForSelectorOptions{
+			Timeout: playwright.Float(10000),
+		})
+		if err != nil {
+			log.Fatalf("❌ 等待分卷弹窗超时: %v", err)
+		}
+
+		fmt.Println("👉 在分卷弹窗中点击“+ 新建分卷”...")
+		if err := page.Locator(".arco-modal").GetByText("新建分卷").Click(); err != nil {
+			log.Fatalf("❌ 点击新建分卷失败: %v", err)
+		}
+
+		fmt.Printf("👉 输入新分卷名称: %s\n", targetVolumeName)
+		newVolumeInput := page.Locator(`.arco-modal input[value=""]`).First()
+		if err := newVolumeInput.Fill(targetVolumeName); err != nil {
+			log.Fatalf("❌ 填写新分卷名称失败: %v", err)
+		}
+
+		fmt.Println("👉 点击弹窗“确定”按钮保存...")
+		if err := page.Locator(".arco-modal button").Filter(playwright.LocatorFilterOptions{HasText: "确定"}).Click(); err != nil {
+			log.Fatalf("❌ 保存分卷失败: %v", err)
+		}
+
+		time.Sleep(2 * time.Second)
+
+		// 再次打开选择
+		if err := volumeDropdown.Click(); err != nil {
+			log.Fatalf("❌ 再次点击分卷下拉框失败: %v", err)
+		}
+		time.Sleep(1 * time.Second)
+		if err := page.Locator(".arco-select-option").Filter(playwright.LocatorFilterOptions{HasText: targetVolumeName}).Click(); err != nil {
+			log.Fatalf("❌ 再次选择分卷失败: %v", err)
+		}
+		fmt.Printf("✅ 成功选择新建的分卷: %s\n", targetVolumeName)
+	}
+
+	fmt.Println("👉 确认分卷无误，点击“新建章节”按钮...")
+	newChapterBtn := page.Locator("button").Filter(playwright.LocatorFilterOptions{HasText: "新建章节"}).First()
+	if err := newChapterBtn.Click(); err != nil {
+		log.Fatalf("❌ 点击新建章节按钮失败: %v", err)
+	}
+
+	fmt.Println("👉 正在进入新建章节编辑器页面...")
+	_, err = page.WaitForSelector("text=请输入标题", playwright.PageWaitForSelectorOptions{
+		Timeout: playwright.Float(30000),
+	})
+	if err != nil {
+		log.Fatalf("❌ 等待章节编辑器超时: %v", err)
+	}
+	fmt.Println("✅ 成功进入第三个页面（章节编辑页）！")
+
+	if chapterTitle != "" {
+		fmt.Printf("👉 填写章节标题: %s\n", chapterTitle)
+		if err := page.Locator(`input[placeholder*="请输入标题"]`).Fill(chapterTitle); err != nil {
+			log.Fatalf("❌ 填写章节标题失败: %v", err)
+		}
+	}
+
+	if contentFile != "" {
+		contentBytes, err := os.ReadFile(contentFile)
+		if err == nil {
+			fmt.Printf("👉 从文件读取并填写正文: %s\n", contentFile)
+			editor := page.Locator(".ql-editor").First()
+			if err := editor.Fill(string(contentBytes)); err != nil {
+				log.Fatalf("❌ 填写正文失败: %v", err)
+			}
+		} else {
+			log.Printf("⚠️ 读取文件失败: %v\n", err)
+		}
+	}
+
+	fmt.Println("👉 点击右上角的发布/下一步按钮...")
+	publishBtn := page.Locator(`button:has-text("发布"), button:has-text("下一步")`).First()
+	if err := publishBtn.Click(); err != nil {
+		log.Fatalf("❌ 点击发布按钮失败: %v", err)
+	}
+
+	// 1. 错别字提示弹窗
+	fmt.Println("🔍 检测是否出现【错别字】提示弹窗...")
+	typoModal := page.Locator(`.arco-modal:has-text("检测到你还有错别字未修改")`)
+	err = typoModal.WaitFor(playwright.LocatorWaitForOptions{
+		State:   playwright.WaitForSelectorStateVisible,
+		Timeout: playwright.Float(3000),
+	})
+	if err == nil {
+		fmt.Println("⚠️ 出现错别字提示，点击【提交】继续...")
+		typoModal.Locator("button").Filter(playwright.LocatorFilterOptions{HasText: "提交"}).Click()
+	} else {
+		fmt.Println("✅ 无错别字提示，继续下一步...")
+	}
+
+	// 2. 内容风险检测弹窗
+	fmt.Println("🔍 检测是否出现【内容风险检测】弹窗...")
+	riskModal := page.Locator(`.arco-modal:has-text("是否进行内容风险检测")`)
+	err = riskModal.WaitFor(playwright.LocatorWaitForOptions{
+		State:   playwright.WaitForSelectorStateVisible,
+		Timeout: playwright.Float(5000),
+	})
+	if err == nil {
+		fmt.Println("⚠️ 出现风险检测提示，点击【确定】...")
+		riskModal.Locator("button").Filter(playwright.LocatorFilterOptions{HasText: "确定"}).Click()
+
+		fmt.Println("⏳ 等待风险检测完成...")
+		_, err = page.WaitForSelector("text=检测暂无风险", playwright.PageWaitForSelectorOptions{
+			Timeout: playwright.Float(15000),
+		})
+		if err == nil {
+			fmt.Println("✅ 风险检测完成且无风险！")
+			fmt.Println("👉 再次点击右上角的发布/下一步按钮...")
+			publishBtn.Click()
+		} else {
+			log.Printf("⚠️ 等待风险检测结果超时: %v\n", err)
+		}
+	} else {
+		fmt.Println("⚠️ 未捕获到风险检测弹窗，可能已跳过或由于其他原因未显示...")
+	}
+
+	// 3. 最终发布设置弹窗
+	fmt.Println("🔍 等待【发布设置】最终弹窗出现...")
+	publishSettingModal := page.Locator(`.arco-modal:has-text("发布设置")`)
+	err = publishSettingModal.WaitFor(playwright.LocatorWaitForOptions{
+		State:   playwright.WaitForSelectorStateVisible,
+		Timeout: playwright.Float(5000),
+	})
+	if err == nil {
+		fmt.Println("👉 在发布设置中，选择【否】不使用AI...")
+		noAiRadio := publishSettingModal.Locator(`.arco-radio:has-text("否")`)
+		if err := noAiRadio.Click(); err != nil {
+			log.Printf("❌ 点击【否】选项失败: %v\n", err)
+		} else {
+			fmt.Println("🚀 点击【确认发布】按钮！")
+			if err := publishSettingModal.Locator("button").Filter(playwright.LocatorFilterOptions{HasText: "确认发布"}).Click(); err != nil {
+				log.Printf("❌ 点击【确认发布】失败: %v\n", err)
+			} else {
+				fmt.Println("🎉 章节发布流程执行完毕！")
+			}
+		}
+	} else {
+		log.Printf("❌ 最终发布设置弹窗处理失败: %v\n", err)
+	}
+
+	fmt.Println("🛑 脚本执行完毕。浏览器将在 10 秒后关闭...")
+	time.Sleep(10 * time.Second)
+}
