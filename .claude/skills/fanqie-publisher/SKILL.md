@@ -1,77 +1,67 @@
 ---
 name: fanqie-publisher
-description: 规范化生成番茄小说章节（>=3000 汉字）并通过 Playwright 自动化发布到番茄作家后台。
-allowed-tools: Bash(node:*) Bash(npm:*) Bash(npx:*)
+description: Automate Fanqie Novel publishing workflow via playwright-cli, with built-in character count validation.
+allowed-tools: Bash(playwright-cli:*) Bash(node:*) Bash(python:*) Bash(go:*)
 ---
 
-# Fanqie Publisher
+# Fanqie Publisher Skill
 
-## 目标
+这是一个为 AI（OpenClaw, Codex, ClaudeCode）设计的自动化发布技能。
+它强制执行“业务字数校验 -> `playwright-cli` 前台可视化+持久化发布”的工作流。
 
-- 让 AI 产出可发布的章节正文（中文汉字数 >= 3000）
-- 不满足字数时，直接返回可用于“打回去重写”的结构化错误
-- 满足字数后，调用 Playwright 自动化脚本在番茄作家后台创建章节并保存草稿或发布
+## 工作流 (Workflow)
 
-## 输入与输出规范
+当用户要求“生成一章小说并发布到番茄”时，请严格按照以下 3 步执行：
 
-- 输入
-  - `book`：作品名（作家后台展示的名称）
-  - `title`：章节标题
-  - `content`：章节正文（纯文本，建议不含 Markdown 语法；段落用空行分隔）
-- 输出
-  - 所有命令输出最后一行均为 JSON，便于 OpenClaw/Codex/ClaudeCode 解析
-  - 校验不通过时退出码为 `2`，并输出 `code=CONTENT_TOO_SHORT`
+### 1. 生成并保存正文
+将 AI 生成的小说内容保存到本地文件（如 `chapter.txt`）。
 
-## 初始化（本地手动一次）
+### 2. 字数校验 (Validation)
+调用提供的校验脚本。**如果校验失败（字数不足），请根据报错信息主动扩写、重写小说内容，直到满足字数要求（默认 >= 3000 字）。**
+```bash
+node validate.js --content-file chapter.txt --minHan 3000
+```
+- 成功输出: `{"ok":true,"step":"validate","hanCount":3050,...}`
+- 失败输出 (Exit Code 2): `{"ok":false,"code":"CONTENT_TOO_SHORT","message":"正文汉字数不足..."}`
+
+### 3. 使用 `playwright-cli` 自动发布
+校验通过后，使用 `playwright-cli` 执行自动化点击与发布。
+> **关键参数**：
+> - `--headed`：强制显示浏览器窗口，避免反爬虫拦截，也能让用户看到发布过程。
+> - `--persistent`：持久化上下文（通常存在 `~/.playwright/cli`），保留用户的登录状态。
+
+#### 首次登录（仅限用户首次使用）
+如果用户尚未登录，请指导用户运行此命令，在弹出的窗口中扫码登录，登录后关闭窗口即可：
+```bash
+playwright-cli open https://writer.fanqienovel.com/ --headed --persistent
+```
+
+#### 执行自动发布命令序列
+依次执行以下交互命令（请根据实际页面微调选择器，或使用 `playwright-cli codegen` 获取最新选择器）：
 
 ```bash
-cd fanqie-skill
-npm i
-npx playwright install
-node bin/fanqie-skill.js login --profile .fanqie-profile
+# 1. 打开带有持久化登录态和可视化界面的浏览器，进入作家后台
+playwright-cli open https://writer.fanqienovel.com/ --headed --persistent
+
+# 2. 找到对应的小说（假设书名为《我的修仙日常》）并点击
+playwright-cli click "text=《我的修仙日常》"
+
+# 3. 点击新建章节
+playwright-cli click "text=新建章节"
+
+# 4. 填写标题
+playwright-cli fill "input[placeholder*='章节名称']" "第001章 标题"
+
+# 5. 填写正文（此处使用 Node.js eval 从文件读取内容并填入，避免长文本在 CLI 中转义出错）
+playwright-cli eval "el => el.value = require('fs').readFileSync('chapter.txt', 'utf8')" "textarea[placeholder*='正文']"
+
+# 6. 点击存草稿（或者改为 'text=发布章节' 正式发布）
+playwright-cli click "text=存草稿"
+
+# 7. 等待保存成功后关闭浏览器
+playwright-cli wait 2000
+playwright-cli close
 ```
 
-登录窗口中完成登录/验证码后，关闭浏览器窗口结束命令。登录态保存在 `--profile` 指定目录。
-
-## 工作流（AI 应执行）
-
-1. 生成章节正文与标题
-2. 将正文写入本地文件（例如 `chapter.txt`）
-3. 运行校验：不足 3000 汉字则重写并回到第 1 步
-4. 校验通过后执行发布（默认存草稿）
-
-### 1) 校验
-
-```bash
-node fanqie-skill/bin/fanqie-skill.js validate --content-file chapter.txt --minHan 3000
-```
-
-校验失败示例（退出码 2）：
-
-```json
-{"ok":false,"code":"CONTENT_TOO_SHORT","message":"正文汉字数不足：当前 123，要求 >= 3000。请重写并扩写至满足字数要求后再发布。","hanCount":123,"minHan":3000}
-```
-
-### 2) 发布
-
-存草稿：
-
-```bash
-node fanqie-skill/bin/fanqie-skill.js publish --book "你的书名" --title "第001章 标题" --content-file chapter.txt --mode draft --profile fanqie-skill/.fanqie-profile
-```
-
-正式发布：
-
-```bash
-node fanqie-skill/bin/fanqie-skill.js publish --book "你的书名" --title "第001章 标题" --content-file chapter.txt --mode publish --profile fanqie-skill/.fanqie-profile
-```
-
-## 平台改版时如何更新选择器
-
-用录制器重新抓取选择器：
-
-```bash
-npx playwright codegen https://writer.fanqienovel.com/
-```
-
-将录制得到的选择器更新到 `fanqie-skill/config/default.json` 的 `selectors` 字段。
+## 多语言集成示例
+如果需要通过 Python 或 Go 脚本驱动整个流程（适用于需要封装为外部工具的场景），请参考 `wrappers/publish.py` 和 `wrappers/publish.go`。它们展示了如何用子进程调用 `validate.js`，成功后再连续调用 `playwright-cli`。
