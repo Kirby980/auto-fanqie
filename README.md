@@ -85,6 +85,13 @@ playwright-cli open https://writer.fanqienovel.com/ --browser=chrome --headed --
 fanqie-publisher publish --novel "重生1982：我有一片禁忌海" --volume "第四卷：新的开始" --title "第001章 你的标题" --file "chapter.txt"
 ```
 
+**支持 Go 语言引擎引擎运行**
+如果你更喜欢或需要在没有 Node.js 的环境下运行（比如想要编译为独立的二进制），我们现在也内置了 Go 语言重写的引擎。你可以在运行时通过 `--engine go` 切换：
+```bash
+# 确保你的环境装有 Go
+fanqie-publisher publish --engine go --novel "小说名称" --volume "分卷名称" --title "第001章 你的标题" --file "chapter.txt"
+```
+
 ---
 
 ## 常见问题 (FAQ)

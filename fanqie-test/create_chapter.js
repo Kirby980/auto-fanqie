@@ -132,6 +132,10 @@ for (let i = 0; i < args.length; i++) {
             console.log(`✅ 成功选择新建的分卷: ${targetVolumeName}`);
         }
 
+        // 在点击新建章节前，先保存当前章节管理页面的 URL，以便发布完成后回来验证
+        const chapterListUrl = page.url();
+        console.log(`👉 记录章节管理页面URL以便后续返回验证: ${chapterListUrl}`);
+
         console.log("👉 确认分卷无误，点击“新建章节”按钮...");
         // 匹配橙色的“新建章节”按钮并点击
         const newChapterBtn = page.locator('button').filter({ hasText: '新建章节' }).first();
@@ -221,10 +225,43 @@ for (let i = 0; i < args.length; i++) {
             console.log("🚀 点击【确认发布】按钮！");
             // 点击右下角橙色的“确认发布”按钮
             await publishSettingModal.locator('button').filter({ hasText: '确认发布' }).click();
+
+            // ==========================================
+            // 第四步：返回列表验证发布结果
+            // ==========================================
+            console.log("⏳ 等待发布请求处理 (3秒)...");
+            await page.waitForTimeout(3000);
+
+            console.log("👉 正在返回章节管理页面进行最终验证...");
+            await page.goto(chapterListUrl, { waitUntil: 'networkidle' });
+
+            console.log("🔍 检查最新章节状态...");
+            await page.waitForSelector('tbody tr', { timeout: 10000 });
             
-            console.log("🎉 章节发布流程执行完毕！");
+            const firstRow = page.locator('tbody tr').first();
+            const rowText = await firstRow.innerText();
+            const oneLineText = rowText.replace(/\s+/g, ' ');
+
+            const hasStatus = oneLineText.includes('待审核') || oneLineText.includes('审核中') || oneLineText.includes('已发布');
+            
+            // 为了应对番茄后台可能的标题截断（如"第76章 因果的..."），我们取标题的前10个字符进行模糊匹配验证
+            const titleToMatch = chapterTitle ? chapterTitle.substring(0, 10) : '';
+            const hasCorrectTitle = titleToMatch ? oneLineText.includes(titleToMatch) : true;
+
+            if (hasStatus) {
+                console.log(`✅ 最终验证通过！最新章节状态正常。`);
+                console.log(`📄 抓取到的最新章节信息: [ ${oneLineText} ]`);
+                if (titleToMatch && !hasCorrectTitle) {
+                    console.log(`⚠️ 提示：最新章节列表中似乎没有匹配到刚刚发布的标题前缀 "${titleToMatch}"，请手动确认。`);
+                }
+                console.log("🎉 真正的发布成功！流程彻底执行完毕！");
+            } else {
+                console.log(`⚠️ 警告：最新章节的状态未显示为"待审核"或"审核中"。请手动确认！`);
+                console.log(`📄 当前列表第一行内容: [ ${oneLineText} ]`);
+            }
+
         } catch (e) {
-            console.error("❌ 最终发布设置弹窗处理失败:", e);
+            console.error("❌ 最终发布设置弹窗处理或验证失败:", e);
         }
 
     } catch (error) {
