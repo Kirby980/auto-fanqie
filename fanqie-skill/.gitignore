@@ -1,0 +1,4 @@
+node_modules
+.fanqie-profile
+artifacts
+*.log

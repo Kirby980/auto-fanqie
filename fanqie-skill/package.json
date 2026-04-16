@@ -1,0 +1,17 @@
+{
+  "name": "fanqie-skill",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "bin": {
+    "fanqie-skill": "bin/fanqie-skill.js"
+  },
+  "scripts": {
+    "login": "node bin/fanqie-skill.js login",
+    "validate": "node bin/fanqie-skill.js validate",
+    "publish": "node bin/fanqie-skill.js publish"
+  },
+  "dependencies": {
+    "playwright": "^1.55.0"
+  }
+}
