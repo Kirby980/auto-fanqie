@@ -42,7 +42,7 @@ def publish_chapter(book_name, chapter_title, content_path, min_han=3000):
     cli = "npx playwright-cli" # 使用 npx 确保能找到命令
     
     commands = [
-        f"{cli} open https://writer.fanqienovel.com/ --headed --persistent",
+        f"{cli} open https://writer.fanqienovel.com/ --channel=chrome --headed --persistent",
         f"{cli} click \"text={book_name}\"",
         f"{cli} click \"text=新建章节\"",
         f"{cli} fill \"input[placeholder*='章节名称']\" \"{chapter_title}\"",

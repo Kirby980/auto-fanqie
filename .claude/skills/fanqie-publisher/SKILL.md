@@ -29,19 +29,20 @@ node validate.js --content-file chapter.txt --minHan 3000
 > **关键参数**：
 > - `--headed`：强制显示浏览器窗口，避免反爬虫拦截，也能让用户看到发布过程。
 > - `--persistent`：持久化上下文（通常存在 `~/.playwright/cli`），保留用户的登录状态。
+> - `--channel=chrome`：强制调用系统本地安装的 Google Chrome 浏览器（而非默认的免安装 Chromium），进一步降低被平台识别为爬虫的风险，提供更真实的运行环境。
 
 #### 首次登录（仅限用户首次使用）
 如果用户尚未登录，请指导用户运行此命令，在弹出的窗口中扫码登录，登录后关闭窗口即可：
 ```bash
-playwright-cli open https://writer.fanqienovel.com/ --headed --persistent
+playwright-cli open https://writer.fanqienovel.com/ --channel=chrome --headed --persistent
 ```
 
 #### 执行自动发布命令序列
 依次执行以下交互命令（请根据实际页面微调选择器，或使用 `playwright-cli codegen` 获取最新选择器）：
 
 ```bash
-# 1. 打开带有持久化登录态和可视化界面的浏览器，进入作家后台
-playwright-cli open https://writer.fanqienovel.com/ --headed --persistent
+# 1. 使用 Google Chrome 浏览器打开带有持久化登录态和可视化界面的浏览器，进入作家后台
+playwright-cli open https://writer.fanqienovel.com/ --channel=chrome --headed --persistent
 
 # 2. 找到对应的小说（假设书名为《我的修仙日常》）并点击
 playwright-cli click "text=《我的修仙日常》"
