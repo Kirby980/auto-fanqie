@@ -1,7 +1,27 @@
 const { chromium } = require('playwright');
+const fs = require('fs');
+
+// 解析命令行参数
+const args = process.argv.slice(2);
+let novelName = "重生1982：我有一片禁忌海"; // 默认书名
+let targetVolumeName = "第四卷：新的开始"; // 默认卷名
+let chapterTitle = "";
+let contentFile = "";
+
+for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--novel' && args[i + 1]) novelName = args[i + 1];
+    if (args[i] === '--volume' && args[i + 1]) targetVolumeName = args[i + 1];
+    if (args[i] === '--title' && args[i + 1]) chapterTitle = args[i + 1];
+    if (args[i] === '--file' && args[i + 1]) contentFile = args[i + 1];
+}
 
 (async () => {
-    console.log("🚀 启动浏览器...");
+    console.log(`🚀 启动浏览器...
+    书名: ${novelName}
+    卷名: ${targetVolumeName}
+    标题: ${chapterTitle || '(未指定)'}
+    内容文件: ${contentFile || '(未指定)'}
+    `);
     // 建议在本地运行时将 headless 设为 false，以便你可以手动登录
     const browser = await chromium.launch({ headless: false }); 
     const context = await browser.newContext();
@@ -18,9 +38,8 @@ const { chromium } = require('playwright');
         // ==========================================
         // 第一步：选择对应名字的小说，点击“章节管理”
         // ==========================================
-        const novelName = "重生1982：我有一片禁忌海";
         console.log(`📖 查找小说: ${novelName} 并点击章节管理...`);
-        
+
         // 查找包含小说名字的卡片区块
         // 实际 DOM 结构可能有所不同，这里使用通用方法：找到包含该书名的卡片，并在该卡片内点击“章节管理”按钮
         const novelCard = page.locator('div').filter({ hasText: novelName }).last();
@@ -40,9 +59,8 @@ const { chromium } = require('playwright');
         // ------------------------------------------
         // 分卷处理逻辑：检查并新建分卷
         // ------------------------------------------
-        const targetVolumeName = "第四卷：新的开始"; // 目标分卷名称
         console.log(`🔍 检查当前分卷是否为: ${targetVolumeName}`);
-        
+
         // 点击分卷下拉框，展开分卷列表
         // 注意：根据第二张截图，这个下拉框默认显示当前分卷（如"第三卷：轮回终结"）
         const volumeDropdown = page.locator('.arco-select').first(); 
@@ -105,11 +123,24 @@ const { chromium } = require('playwright');
         // ==========================================
         console.log("👉 正在进入新建章节编辑器页面...");
         
-        // 等待输入标题的区域出现，代表进入了第三个页面
+        // 等待输入标题的区域出现，代表成功进入了第三个页面
         await page.waitForSelector('text=请输入标题', { timeout: 30000 });
         console.log("✅ 成功进入第三个页面（章节编辑页）！");
 
         // 模拟填写标题和正文
+        if (chapterTitle) {
+            console.log(`👉 填写章节标题: ${chapterTitle}`);
+            await page.locator('input[placeholder*="请输入标题"]').fill(chapterTitle);
+        }
+        
+        if (contentFile && fs.existsSync(contentFile)) {
+            console.log(`👉 从文件读取并填写正文: ${contentFile}`);
+            const content = fs.readFileSync(contentFile, 'utf8');
+            // 注意：番茄的富文本编辑器通常是可编辑的 div (如 contenteditable) 或 textarea
+            const editor = page.locator('.ql-editor').first(); // 根据实际页面调整类名
+            await editor.fill(content);
+        }
+
         // 假设这里你已经自动填充了内容，我们将点击右上角的“下一步”或“发布”按钮
         console.log("👉 点击右上角的发布/下一步按钮...");
         // 找到页面右上角的按钮，通常文本是“发布”或“下一步”
