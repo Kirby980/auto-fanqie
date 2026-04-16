@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/playwright-community/playwright-go"
@@ -165,6 +166,9 @@ func main() {
 		fmt.Printf("✅ 成功选择新建的分卷: %s\n", targetVolumeName)
 	}
 
+	chapterListUrl := page.URL()
+	fmt.Printf("👉 记录章节管理页面URL以便后续返回验证: %s\n", chapterListUrl)
+
 	fmt.Println("👉 确认分卷无误，点击“新建章节”按钮...")
 	newChapterBtn := page.Locator("button").Filter(playwright.LocatorFilterOptions{HasText: "新建章节"}).First()
 	if err := newChapterBtn.Click(); err != nil {
@@ -263,11 +267,49 @@ func main() {
 			if err := publishSettingModal.Locator("button").Filter(playwright.LocatorFilterOptions{HasText: "确认发布"}).Click(); err != nil {
 				log.Printf("❌ 点击【确认发布】失败: %v\n", err)
 			} else {
-				fmt.Println("🎉 章节发布流程执行完毕！")
+				// 4. 返回列表验证发布结果
+				fmt.Println("⏳ 等待发布请求处理 (3秒)...")
+				time.Sleep(3 * time.Second)
+
+				fmt.Println("👉 正在返回章节管理页面进行最终验证...")
+				if _, err := page.Goto(chapterListUrl, playwright.PageGotoOptions{
+					WaitUntil: playwright.WaitUntilStateNetworkidle,
+				}); err != nil {
+					log.Printf("⚠️ 返回章节列表页面失败: %v\n", err)
+				} else {
+					fmt.Println("🔍 检查最新章节状态...")
+					if _, err := page.WaitForSelector("tbody tr", playwright.PageWaitForSelectorOptions{
+						Timeout: playwright.Float(10000),
+					}); err == nil {
+						firstRow := page.Locator("tbody tr").First()
+						rowText, _ := firstRow.InnerText()
+						
+						// 将换行符替换为空格，方便单行打印
+						words := strings.Fields(rowText)
+						oneLineText := strings.Join(words, " ")
+						
+						hasStatus := strings.Contains(oneLineText, "待审核") || strings.Contains(oneLineText, "审核中") || strings.Contains(oneLineText, "已发布")
+						hasChapterKeyword := strings.Contains(oneLineText, "第") && strings.Contains(oneLineText, "章")
+
+						if hasStatus {
+							fmt.Println("✅ 最终验证通过！最新章节状态正常。")
+							fmt.Printf("📄 抓取到的最新章节信息: [ %s ]\n", oneLineText)
+							if !hasChapterKeyword {
+								fmt.Println("⚠️ 提示：标题中似乎没有检测到\"第X章\"的格式，请确认这是否符合你的预期。")
+							}
+							fmt.Println("🎉 真正的发布成功！流程彻底执行完毕！")
+						} else {
+							fmt.Println("⚠️ 警告：最新章节的状态未显示为\"待审核\"或\"审核中\"。请手动确认！")
+							fmt.Printf("📄 当前列表第一行内容: [ %s ]\n", oneLineText)
+						}
+					} else {
+						fmt.Println("⚠️ 警告：无法加载章节列表，请手动验证发布结果。")
+					}
+				}
 			}
 		}
 	} else {
-		log.Printf("❌ 最终发布设置弹窗处理失败: %v\n", err)
+		log.Printf("❌ 最终发布设置弹窗处理或验证失败: %v\n", err)
 	}
 
 	fmt.Println("🛑 脚本执行完毕。浏览器将在 10 秒后关闭...")
