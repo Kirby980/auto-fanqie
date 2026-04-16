@@ -54,7 +54,7 @@ playwright-cli --help
 ### 1. 首次登录（仅限首次使用）
 如果你是第一次使用该环境，必须先执行一次持久化登录命令。运行以下命令后，在弹出的 Chrome 窗口中扫码或输入密码登录番茄作家后台，登录成功后直接关闭窗口即可。登录状态将被持久化保存在本地。
 ```bash
-playwright-cli open https://writer.fanqienovel.com/ --channel=chrome --headed --persistent
+playwright-cli open https://writer.fanqienovel.com/ --browser=chrome --headed --persistent
 ```
 
 ### 2. 脚本配置调整
@@ -66,7 +66,7 @@ playwright-cli open https://writer.fanqienovel.com/ --channel=chrome --headed --
 
 ```bash
 # 1. 使用持久化状态打开后台
-playwright-cli open https://writer.fanqienovel.com/ --channel=chrome --headed --persistent
+playwright-cli open https://writer.fanqienovel.com/ --browser=chrome --headed --persistent
 
 # 2. 找到对应的小说并点击（如《重生1982：我有一片禁忌海》）
 playwright-cli click "text=重生1982：我有一片禁忌海"
