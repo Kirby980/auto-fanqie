@@ -101,7 +101,7 @@ const { chromium } = require('playwright');
         await newChapterBtn.click();
 
         // ==========================================
-        // 第三步：进入写作（新建章节）页面
+        // 第三步：进入写作（新建章节）页面并发布
         // ==========================================
         console.log("👉 正在进入新建章节编辑器页面...");
         
@@ -109,10 +109,73 @@ const { chromium } = require('playwright');
         await page.waitForSelector('text=请输入标题', { timeout: 30000 });
         console.log("✅ 成功进入第三个页面（章节编辑页）！");
 
-        // 可以在这里继续编写输入标题和正文的自动化代码
-        // 例如：
-        // await page.getByPlaceholder('请输入标题').fill('第xx章 标题');
-        // await page.locator('.ql-editor').fill('正文内容...');
+        // 模拟填写标题和正文
+        // 假设这里你已经自动填充了内容，我们将点击右上角的“下一步”或“发布”按钮
+        console.log("👉 点击右上角的发布/下一步按钮...");
+        // 找到页面右上角的按钮，通常文本是“发布”或“下一步”
+        const publishBtn = page.locator('button').filter({ hasText: /发布|下一步/ }).first();
+        await publishBtn.click();
+
+        // ------------------------------------------
+        // 处理各种可能弹出的发布检测弹窗
+        // ------------------------------------------
+        
+        // 1. 错别字提示弹窗 (可能出现)
+        // 弹窗文本: "检测到你还有错别字未修改，是否确定提交？"
+        try {
+            console.log("🔍 检测是否出现【错别字】提示弹窗...");
+            const typoModal = page.locator('.arco-modal:has-text("检测到你还有错别字未修改")');
+            await typoModal.waitFor({ state: 'visible', timeout: 3000 });
+            console.log("⚠️ 出现错别字提示，点击【提交】继续...");
+            // 点击橙色的“提交”按钮
+            await typoModal.locator('button').filter({ hasText: '提交' }).click();
+        } catch (e) {
+            console.log("✅ 无错别字提示，继续下一步...");
+        }
+
+        // 2. 内容风险检测弹窗 (必定出现)
+        // 弹窗文本: "是否进行内容风险检测？"
+        try {
+            console.log("🔍 检测是否出现【内容风险检测】弹窗...");
+            const riskModal = page.locator('.arco-modal:has-text("是否进行内容风险检测")');
+            await riskModal.waitFor({ state: 'visible', timeout: 5000 });
+            console.log("⚠️ 出现风险检测提示，点击【确定】...");
+            // 点击橙色的“确定”按钮
+            await riskModal.locator('button').filter({ hasText: '确定' }).click();
+            
+            // 等待页面顶部出现“检测暂无风险，可发布或继续修改”的绿色提示横幅
+            console.log("⏳ 等待风险检测完成...");
+            await page.waitForSelector('text=检测暂无风险', { timeout: 15000 });
+            console.log("✅ 风险检测完成且无风险！");
+            
+            // 检测完成后，需要再次点击右上角的“下一步/发布”按钮进入最终发布设置
+            console.log("👉 再次点击右上角的发布/下一步按钮...");
+            await publishBtn.click();
+        } catch (e) {
+            console.log("⚠️ 未捕获到风险检测弹窗，可能已跳过或由于其他原因未显示...");
+        }
+
+        // 3. 最终发布设置弹窗 (必定出现)
+        // 弹窗标题: "发布设置" -> 包含 "是否使用AI" 单选框
+        try {
+            console.log("🔍 等待【发布设置】最终弹窗出现...");
+            const publishSettingModal = page.locator('.arco-modal:has-text("发布设置")');
+            await publishSettingModal.waitFor({ state: 'visible', timeout: 5000 });
+            
+            console.log("👉 在发布设置中，选择【否】不使用AI...");
+            // 根据第三张截图，“是否使用AI”有两个单选框，我们需要点击“否”对应的单选框
+            // 这里使用更精确的定位，找到包含“否”文本的 radio 组件并点击
+            const noAiRadio = publishSettingModal.locator('.arco-radio:has-text("否")');
+            await noAiRadio.click();
+            
+            console.log("🚀 点击【确认发布】按钮！");
+            // 点击右下角橙色的“确认发布”按钮
+            await publishSettingModal.locator('button').filter({ hasText: '确认发布' }).click();
+            
+            console.log("🎉 章节发布流程执行完毕！");
+        } catch (e) {
+            console.error("❌ 最终发布设置弹窗处理失败:", e);
+        }
 
     } catch (error) {
         console.error("❌ 发生错误:", error);
