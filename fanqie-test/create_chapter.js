@@ -43,14 +43,15 @@ const { chromium } = require('playwright');
         const targetVolumeName = "第四卷：新的开始"; // 目标分卷名称
         console.log(`🔍 检查当前分卷是否为: ${targetVolumeName}`);
         
-        // 点击分卷下拉框
-        const volumeDropdown = page.locator('.arco-select').first(); // 根据页面结构，这通常是分卷选择的下拉框
+        // 点击分卷下拉框，展开分卷列表
+        // 注意：根据第二张截图，这个下拉框默认显示当前分卷（如"第三卷：轮回终结"）
+        const volumeDropdown = page.locator('.arco-select').first(); 
         await volumeDropdown.click();
         
         // 等待下拉列表出现
         await page.waitForTimeout(1000);
         
-        // 检查目标分卷是否存在
+        // 检查目标分卷是否存在于下拉列表中
         const volumeExists = await page.locator('.arco-select-option').filter({ hasText: targetVolumeName }).isVisible();
         
         if (volumeExists) {
@@ -60,27 +61,34 @@ const { chromium } = require('playwright');
             console.log(`⚠️ 未找到分卷: ${targetVolumeName}，准备新建分卷...`);
             // 关闭下拉框 (点击页面空白处)
             await page.mouse.click(0, 0);
+            await page.waitForTimeout(500);
             
-            // 点击“编辑分卷”按钮
+            // 点击右上角的“编辑分卷”按钮
             console.log("👉 点击“编辑分卷”按钮...");
             await page.locator('button').filter({ hasText: '编辑分卷' }).click();
             
-            // 等待新建分卷弹窗/侧边栏出现并点击“新建分卷”
-            console.log("👉 在分卷管理中点击新建分卷...");
-            await page.locator('text=新建分卷').first().click();
+            // 等待分卷弹窗出现（根据第一张截图，弹窗标题为"分卷"）
+            await page.waitForSelector('div.arco-modal:has-text("分卷")', { timeout: 10000 });
             
-            // 输入新分卷名称 (这里假设有一个输入框 placeholder 是输入分卷名称之类)
-            // 注意：这里的选择器可能需要根据实际页面 DOM 结构进行调整
-            await page.locator('input[placeholder*="分卷名称"]').fill(targetVolumeName);
+            // 点击左下角的“+ 新建分卷”按钮
+            console.log("👉 在分卷弹窗中点击“+ 新建分卷”...");
+            await page.locator('.arco-modal').getByText('新建分卷').click();
             
-            // 确认创建分卷
-            console.log("👉 确认创建新分卷...");
-            await page.locator('button').filter({ hasText: '确定' }).first().click();
+            // 在新出现的分卷输入框中输入新分卷名称
+            // 通常新建的分卷输入框会出现在列表的最上方或者是一个新的输入框
+            console.log(`👉 输入新分卷名称: ${targetVolumeName}`);
+            // 假设新分卷出现一个空的 input
+            const newVolumeInput = page.locator('.arco-modal input[value=""]').first();
+            await newVolumeInput.fill(targetVolumeName);
             
-            // 等待分卷创建成功提示并关闭弹窗 (如果有的话)
-            await page.waitForTimeout(2000); // 简单等待
+            // 点击弹窗右下角的“确定”按钮保存分卷
+            console.log("👉 点击弹窗“确定”按钮保存...");
+            await page.locator('.arco-modal button').filter({ hasText: '确定' }).click();
             
-            // 再次打开下拉框并选择刚创建的分卷
+            // 等待弹窗关闭和接口响应
+            await page.waitForTimeout(2000); 
+            
+            // 再次打开分卷下拉框并选择刚创建的分卷
             await volumeDropdown.click();
             await page.waitForTimeout(1000);
             await page.locator('.arco-select-option').filter({ hasText: targetVolumeName }).click();
