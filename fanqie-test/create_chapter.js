@@ -22,10 +22,29 @@ for (let i = 0; i < args.length; i++) {
     标题: ${chapterTitle || '(未指定)'}
     内容文件: ${contentFile || '(未指定)'}
     `);
-    // 建议在本地运行时将 headless 设为 false，以便你可以手动登录
-    const browser = await chromium.launch({ headless: false }); 
-    const context = await browser.newContext();
-    const page = await context.newPage();
+    // ==========================================
+        // 准备浏览器启动配置，使用持久化上下文
+        // ==========================================
+        const userDataDir = require('path').join(require('os').homedir(), '.playwright', 'fanqie-profile');
+        
+        // 使用 launchPersistentContext 而不是 launch
+        // 这样可以保留登录状态，且可以直接指定浏览器频道
+        const context = await chromium.launchPersistentContext(userDataDir, {
+            headless: false, // 必须开启 headed 模式以避免被轻易检测为机器人
+            channel: 'chrome', // 强制使用本地真实的 Google Chrome
+            viewport: { width: 1280, height: 720 },
+            args: [
+                '--disable-blink-features=AutomationControlled', // 隐藏 webdriver 标记
+                '--disable-infobars', // 隐藏"Chrome 正受到自动测试软件的控制"横幅
+            ]
+        });
+        
+        const page = context.pages()[0] || await context.newPage();
+
+        // 反爬虫注入：抹除 webdriver 痕迹
+        await page.addInitScript(() => {
+            Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+        });
 
     try {
         console.log("🌐 访问番茄小说作家后台...");
@@ -213,6 +232,6 @@ for (let i = 0; i < args.length; i++) {
     } finally {
         console.log("🛑 脚本执行完毕。浏览器将在 10 秒后关闭...");
         await page.waitForTimeout(10000); // 停留10秒以便观察
-        await browser.close();
+        await context.close();
     }
 })();

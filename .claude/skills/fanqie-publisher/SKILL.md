@@ -38,30 +38,15 @@ playwright-cli open https://writer.fanqienovel.com/ --browser=chrome --headed --
 ```
 
 #### 执行自动发布命令序列
-依次执行以下交互命令（请根据实际页面微调选择器，或使用 `playwright-cli codegen` 获取最新选择器）：
+依次执行以下交互命令（通过调用底层高效的原生 Node.js 脚本完成浏览器自动化操作，大幅节省 Token 消耗）：
 
 ```bash
-# 1. 使用 Google Chrome 浏览器打开带有持久化登录态和可视化界面的浏览器，进入作家后台
-playwright-cli open https://writer.fanqienovel.com/ --browser=chrome --headed --persistent
+# 1. 确保用户已经执行过持久化登录（见上文）。
 
-# 2. 找到对应的小说（假设书名为《我的修仙日常》）并点击
-playwright-cli click "text=《我的修仙日常》"
-
-# 3. 点击新建章节
-playwright-cli click "text=新建章节"
-
-# 4. 填写标题
-playwright-cli fill "input[placeholder*='章节名称']" "第001章 标题"
-
-# 5. 填写正文（此处使用 Node.js eval 从文件读取内容并填入，避免长文本在 CLI 中转义出错）
-playwright-cli eval "el => el.value = require('fs').readFileSync('chapter.txt', 'utf8')" "textarea[placeholder*='正文']"
-
-# 6. 点击存草稿（或者改为 'text=发布章节' 正式发布）
-playwright-cli click "text=存草稿"
-
-# 7. 等待保存成功后关闭浏览器
-playwright-cli wait 2000
-playwright-cli close
+# 2. 调用原生脚本进行自动化发布。
+# 此脚本会使用真实的本地 Chrome 浏览器启动（受 --browser=chrome 驱动），
+# 并通过真实的鼠标点击和键盘输入模拟用户行为，极难被反爬虫系统检测。
+fanqie-publisher publish --novel "小说名称" --volume "分卷名称" --title "章节标题" --file "chapter.txt"
 ```
 
 ## 多语言集成示例
