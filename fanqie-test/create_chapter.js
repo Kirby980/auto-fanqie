@@ -37,12 +37,58 @@ const { chromium } = require('playwright');
         // 等待“新建章节”按钮出现，这代表第二页已经加载完毕
         await page.waitForSelector('text=新建章节', { timeout: 30000 });
         
-        // （可选）检查或选择分卷
-        // console.log("🔍 检查分卷信息...");
-        // 如果需要切换分卷，可以在这里添加点击下拉框和选择卷的代码
+        // ------------------------------------------
+        // 分卷处理逻辑：检查并新建分卷
+        // ------------------------------------------
+        const targetVolumeName = "第四卷：新的开始"; // 目标分卷名称
+        console.log(`🔍 检查当前分卷是否为: ${targetVolumeName}`);
+        
+        // 点击分卷下拉框
+        const volumeDropdown = page.locator('.arco-select').first(); // 根据页面结构，这通常是分卷选择的下拉框
+        await volumeDropdown.click();
+        
+        // 等待下拉列表出现
+        await page.waitForTimeout(1000);
+        
+        // 检查目标分卷是否存在
+        const volumeExists = await page.locator('.arco-select-option').filter({ hasText: targetVolumeName }).isVisible();
+        
+        if (volumeExists) {
+            console.log(`✅ 找到分卷: ${targetVolumeName}，直接选择`);
+            await page.locator('.arco-select-option').filter({ hasText: targetVolumeName }).click();
+        } else {
+            console.log(`⚠️ 未找到分卷: ${targetVolumeName}，准备新建分卷...`);
+            // 关闭下拉框 (点击页面空白处)
+            await page.mouse.click(0, 0);
+            
+            // 点击“编辑分卷”按钮
+            console.log("👉 点击“编辑分卷”按钮...");
+            await page.locator('button').filter({ hasText: '编辑分卷' }).click();
+            
+            // 等待新建分卷弹窗/侧边栏出现并点击“新建分卷”
+            console.log("👉 在分卷管理中点击新建分卷...");
+            await page.locator('text=新建分卷').first().click();
+            
+            // 输入新分卷名称 (这里假设有一个输入框 placeholder 是输入分卷名称之类)
+            // 注意：这里的选择器可能需要根据实际页面 DOM 结构进行调整
+            await page.locator('input[placeholder*="分卷名称"]').fill(targetVolumeName);
+            
+            // 确认创建分卷
+            console.log("👉 确认创建新分卷...");
+            await page.locator('button').filter({ hasText: '确定' }).first().click();
+            
+            // 等待分卷创建成功提示并关闭弹窗 (如果有的话)
+            await page.waitForTimeout(2000); // 简单等待
+            
+            // 再次打开下拉框并选择刚创建的分卷
+            await volumeDropdown.click();
+            await page.waitForTimeout(1000);
+            await page.locator('.arco-select-option').filter({ hasText: targetVolumeName }).click();
+            console.log(`✅ 成功选择新建的分卷: ${targetVolumeName}`);
+        }
 
-        console.log("👉 点击“新建章节”按钮...");
-        // 根据图片，“新建章节”是一个明显的橙色按钮
+        console.log("👉 确认分卷无误，点击“新建章节”按钮...");
+        // 匹配橙色的“新建章节”按钮并点击
         const newChapterBtn = page.locator('button').filter({ hasText: '新建章节' }).first();
         await newChapterBtn.click();
 
