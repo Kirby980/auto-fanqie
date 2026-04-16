@@ -1,0 +1,25 @@
+{
+  "name": "fanqie-publisher",
+  "version": "1.0.0",
+  "description": "Auto publisher for Fanqie Novel, including a Claude Code skill",
+  "main": "fanqie-test/create_chapter.js",
+  "bin": {
+    "fanqie-publisher": "bin/cli.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "fanqie",
+    "novel",
+    "playwright",
+    "claude",
+    "skill",
+    "automation"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "playwright": "^1.59.1"
+  }
+}

@@ -25,27 +25,29 @@
 
 ### 2. 在新服务器上安装与部署
 
-如果你想在另一台服务器或其他电脑上运行此 Skill，请按照以下步骤操作：
+如果你想在另一台服务器或其他电脑上运行此 Skill，或者想在别的项目中复用它，你可以通过 npm 直接安装（将此代码库作为模块）：
 
-#### 步骤一：克隆代码
-将本项目代码克隆到你的服务器目标目录：
-```bash
-git clone <你的仓库地址>
-cd <你的项目目录>
-```
-
-#### 步骤二：全局安装 Playwright CLI
-本项目依赖于 `@playwright/cli`，你需要在全局安装它：
+#### 步骤一：全局安装 Playwright CLI
+由于自动化流程依赖 `@playwright/cli` 控制浏览器，你需要在全局先安装它：
 ```bash
 npm install -g @playwright/cli@latest
 ```
+运行 `playwright-cli --help` 验证是否成功。如果需要安装底层浏览器依赖，可以运行 `npx playwright install-deps`。
 
-#### 步骤三：验证安装
-安装完成后，你可以通过运行帮助命令来验证是否安装成功，这会自动处理底层依赖库：
+#### 步骤二：安装 fanqie-publisher
+将当前仓库克隆下来，并在根目录进行全局安装：
 ```bash
-playwright-cli --help
+git clone <你的仓库地址>
+cd <你的项目目录>
+npm install -g .
 ```
-> **注意**：如果在 Linux 服务器上运行（特别是无图形界面的服务器），你可能还需要安装一些系统底层依赖。可以使用 `npx playwright install-deps` 来安装底层库。
+
+#### 步骤三：在你的 AI 编码助手中安装 Skill
+安装成功后，你可以通过自带的 CLI 命令一键将该 Skill 安装到当前项目的 `.claude/skills` 中：
+```bash
+fanqie-publisher install --skills
+```
+安装完成后，你可以直接在命令行对 Claude Code 等说：“使用 fanqie-publisher skill 帮我生成并发布小说到番茄后台”。
 
 ---
 
