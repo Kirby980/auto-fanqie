@@ -43,11 +43,18 @@ npm install -g .
 ```
 
 #### 步骤三：在你的 AI 编码助手中安装 Skill
-安装成功后，你可以通过自带的 CLI 命令一键将该 Skill 安装到当前项目的 `.claude/skills` 中：
-```bash
-fanqie-publisher install --skills
-```
-安装完成后，你可以直接在命令行对 Claude Code 等说：“使用 fanqie-publisher skill 帮我生成并发布小说到番茄后台”。
+在让 AI 帮你发文之前，**你必须同时安装 `playwright-cli` 的基础 Skill 和我们封装的 `fanqie-publisher` 业务 Skill**：
+
+1. **安装 Playwright CLI 官方 Skill**（让 AI 懂得如何用命令行控制浏览器）：
+   ```bash
+   playwright-cli install --skills
+   ```
+2. **安装 Fanqie Publisher 业务 Skill**（让 AI 懂得番茄小说后台的发文流程和字数校验规则）：
+   ```bash
+   fanqie-publisher install --skills
+   ```
+
+安装完成后，你就可以直接对 Claude Code 等 AI 助手说：“使用 fanqie-publisher skill 帮我生成一章并发布到番茄后台”。
 
 ---
 
