@@ -70,29 +70,20 @@ playwright-cli open https://writer.fanqienovel.com/ --browser=chrome --headed --
 在运行发布脚本之前，你需要根据自己的实际情况修改脚本中的核心变量，例如小说名称和分卷。
 
 ### 3. 运行自动发布流程
-你无需手写底层的 Playwright 启动代码，而是通过 `playwright-cli` 执行自动化命令序列。
-例如，可以通过 bash 脚本或 Node.js 封装连续调用 `playwright-cli` 的点击和填充指令来完成发布：
+这里有两种方式运行发文流程：
+
+**方式一：让 AI 自动执行（需消耗 Token）**
+安装完双重 Skill 后，你可以直接在终端对 Claude Code 或其他 AI 助手说：
+> "使用 fanqie-publisher skill 帮我生成一章《重生1982》的小说并发布。"
+此时，AI 会自己写小说 -> 自动调用 `fanqie-publisher validate` 检查字数 -> 自动敲击 `playwright-cli` 的各项命令去浏览器里完成点击和发布。**这种方式会消耗大模型 Token，但完全自动化且智能处理所有边界情况。**
+
+**方式二：直接运行预装脚本（零 Token 消耗，适合传统自动化）**
+如果你已经提前写好了小说内容（比如存放在了 `chapter.txt` 中），你**完全不需要启动 AI 助手**。
+你可以直接使用我们封装好的 Node.js 脚本一键发文，这个脚本底层调用的是原生的 `playwright` 核心库（不是 CLI，也不经过 LLM），因此**运行速度极快，且零 Token 消耗**：
 
 ```bash
-# 1. 使用持久化状态打开后台
-playwright-cli open https://writer.fanqienovel.com/ --browser=chrome --headed --persistent
-
-# 2. 找到对应的小说并点击（如《重生1982：我有一片禁忌海》）
-playwright-cli click "text=重生1982：我有一片禁忌海"
-
-# 3. 点击章节管理并新建章节
-playwright-cli click "text=章节管理"
-playwright-cli click "text=新建章节"
-
-# 4. 填写标题和正文
-playwright-cli fill "input[placeholder*='请输入标题']" "第001章 你的标题"
-playwright-cli eval "el => el.value = require('fs').readFileSync('chapter.txt', 'utf8')" "textarea" # 或实际的编辑器选择器
-
-# 5. 点击发布并处理弹窗
-playwright-cli click "text=发布"
-# 后续弹窗点击...
+fanqie-publisher publish --novel "重生1982：我有一片禁忌海" --volume "第四卷：新的开始" --title "第001章 你的标题" --file "chapter.txt"
 ```
-*(注：项目中也提供了封装好的 Node/Python 脚本直接调用这些 CLI 指令，你可以直接运行封装好的脚本如 `node fanqie-test/create_chapter.js`（需确保脚本内部已适配 cli 调用方式）。)*
 
 ---
 
