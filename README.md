@@ -1,22 +1,19 @@
 # 番茄小说自动发布 Skill (Fanqie Novel Auto-Publish)
 
-这是一个基于 Playwright 开发的自动化脚本/Skill，用于在番茄小说作家后台实现全自动的章节发布流程。
+这是一个基于 `playwright-cli` 开发的自动化脚本/Skill，用于在番茄小说作家后台实现全自动的章节发布流程。它严格遵循“业务字数校验 -> `playwright-cli` 前台可视化+持久化发布”的工作流。
 
 ## 核心功能
 
-该脚本支持从选择小说到最终发布的全套流程：
-1. **自动进入作家后台**：访问工作台并等待页面加载。
-2. **选择指定小说**：根据小说名称自动匹配并进入“章节管理”。
-3. **智能分卷处理**：
-   - 自动检查并选择目标分卷。
-   - 如果分卷不存在，会自动触发“新建分卷”流程并应用。
-4. **新建章节并发布**：
-   - 自动点击“新建章节”进入编辑器（支持后续接入内容自动填充）。
-   - 自动点击“发布/下一步”。
-5. **全自动弹窗处理**：
-   - 自动处理“错别字”提示（点击提交）。
-   - 自动触发“内容风险检测”并等待检测通过。
-   - 自动处理最终的“发布设置”（勾选“不使用 AI”并确认发布）。
+该 Skill 支持从小说内容生成、校验到最终发布的全套流程：
+1. **自动生成与字数校验**：生成正文并调用 `validate.js` 强制字数校验（默认 >= 3000字）。
+2. **基于 playwright-cli 的自动发布**：
+   - 使用 `--headed` 强制显示浏览器窗口，提供真实运行环境。
+   - 使用 `--persistent` 保持用户登录状态，免去重复扫码。
+   - 使用 `--channel=chrome` 调用系统本地 Chrome 浏览器，降低反爬拦截风险。
+3. **全自动弹窗与流程处理**：
+   - 自动进入指定小说和分卷。
+   - 自动点击新建章节、输入标题和从文件读取正文。
+   - 自动处理“错别字”提示、“内容风险检测”以及“发布设置（不使用 AI）”。
 
 ---
 
@@ -24,11 +21,11 @@
 
 ### 1. 环境要求
 - [Node.js](https://nodejs.org/) (建议版本 v16 或以上)
-- npm 或 yarn
+- 已经安装好的本地 Google Chrome 浏览器
 
 ### 2. 在新服务器上安装与部署
 
-如果你想在另一台服务器或其他电脑上运行此脚本，请按照以下步骤操作：
+如果你想在另一台服务器或其他电脑上运行此 Skill，请按照以下步骤操作：
 
 #### 步骤一：克隆代码
 将本项目代码克隆到你的服务器目标目录：
@@ -38,48 +35,55 @@ cd <你的项目目录>
 ```
 
 #### 步骤二：全局安装 Playwright CLI
-本项目使用的是 `@playwright/cli`，你需要在全局安装它：
+本项目依赖于 `@playwright/cli`，你需要在全局安装它：
 ```bash
 npm install -g @playwright/cli@latest
 ```
 
 #### 步骤三：验证安装
-安装完成后，你可以通过运行帮助命令来验证是否安装成功，这会自动处理浏览器内核的下载：
+安装完成后，你可以通过运行帮助命令来验证是否安装成功，这会自动处理底层依赖库：
 ```bash
 playwright-cli --help
 ```
-> **注意**：如果在 Linux 服务器上运行（特别是无图形界面的服务器），你可能还需要安装一些系统依赖。如果是这样，可以使用 `npx playwright install-deps` 来安装底层库。
+> **注意**：如果在 Linux 服务器上运行（特别是无图形界面的服务器），你可能还需要安装一些系统底层依赖。可以使用 `npx playwright install-deps` 来安装底层库。
 
 ---
 
 ## 如何使用
 
-### 1. 脚本配置调整
-在运行之前，你需要根据自己的实际情况修改脚本（`create_chapter.js`）中的几个核心变量：
-
-```javascript
-// 修改为你要发布的小说名称
-const novelName = "重生1982：我有一片禁忌海"; 
-
-// 修改为你希望发布到的分卷名称
-const targetVolumeName = "第四卷：新的开始"; 
-```
-
-### 2. 运行脚本
-安装完 CLI 后，你无需通过 `node` 命令，而是直接通过配置好的 `playwright-cli` 或者继续使用 `node` 运行：
+### 1. 首次登录（仅限首次使用）
+如果你是第一次使用该环境，必须先执行一次持久化登录命令。运行以下命令后，在弹出的 Chrome 窗口中扫码或输入密码登录番茄作家后台，登录成功后直接关闭窗口即可。登录状态将被持久化保存在本地。
 ```bash
-node fanqie-test/create_chapter.js
+playwright-cli open https://writer.fanqienovel.com/ --channel=chrome --headed --persistent
 ```
 
-### 3. 关于登录（重要）
-- **本地/带图形界面环境**：脚本默认配置了 `headless: false`，运行时会弹出一个真实的浏览器窗口。你有 60 秒的时间手动扫码或输入密码登录番茄作家后台。登录成功后，脚本会自动接管后续流程。
-- **远程服务器/无头环境**：
-  如果你在没有图形界面的服务器上运行，必须将代码中的 `headless` 改为 `true`：
-  ```javascript
-  const browser = await chromium.launch({ headless: true }); 
-  ```
-  **如何解决服务器上的登录问题？**
-  服务器上无法扫码，推荐的做法是在本地机器上登录一次，然后使用 Playwright 的 `storageState` API 将 Cookies 和 Session 保存为一个 JSON 文件（如 `auth.json`），然后将该文件上传到服务器，让脚本在启动时加载该认证状态。
+### 2. 脚本配置调整
+在运行发布脚本之前，你需要根据自己的实际情况修改脚本中的核心变量，例如小说名称和分卷。
+
+### 3. 运行自动发布流程
+你无需手写底层的 Playwright 启动代码，而是通过 `playwright-cli` 执行自动化命令序列。
+例如，可以通过 bash 脚本或 Node.js 封装连续调用 `playwright-cli` 的点击和填充指令来完成发布：
+
+```bash
+# 1. 使用持久化状态打开后台
+playwright-cli open https://writer.fanqienovel.com/ --channel=chrome --headed --persistent
+
+# 2. 找到对应的小说并点击（如《重生1982：我有一片禁忌海》）
+playwright-cli click "text=重生1982：我有一片禁忌海"
+
+# 3. 点击章节管理并新建章节
+playwright-cli click "text=章节管理"
+playwright-cli click "text=新建章节"
+
+# 4. 填写标题和正文
+playwright-cli fill "input[placeholder*='请输入标题']" "第001章 你的标题"
+playwright-cli eval "el => el.value = require('fs').readFileSync('chapter.txt', 'utf8')" "textarea" # 或实际的编辑器选择器
+
+# 5. 点击发布并处理弹窗
+playwright-cli click "text=发布"
+# 后续弹窗点击...
+```
+*(注：项目中也提供了封装好的 Node/Python 脚本直接调用这些 CLI 指令，你可以直接运行封装好的脚本如 `node fanqie-test/create_chapter.js`（需确保脚本内部已适配 cli 调用方式）。)*
 
 ---
 
