@@ -37,22 +37,18 @@ git clone <你的仓库地址>
 cd <你的项目目录>
 ```
 
-#### 步骤二：安装依赖
-进入脚本所在目录（如 `fanqie-test`），并安装项目依赖的 `playwright`：
+#### 步骤二：全局安装 Playwright CLI
+本项目使用的是 `@playwright/cli`，你需要在全局安装它：
 ```bash
-cd fanqie-test
-npm install
+npm install -g @playwright/cli@latest
 ```
 
-#### 步骤三：安装浏览器内核
-Playwright 需要对应的浏览器二进制文件才能运行，执行以下命令安装默认浏览器（Chromium）：
+#### 步骤三：验证安装
+安装完成后，你可以通过运行帮助命令来验证是否安装成功，这会自动处理浏览器内核的下载：
 ```bash
-npx playwright install chromium
+playwright-cli --help
 ```
-> **注意**：如果在 Linux 服务器上运行（特别是无图形界面的服务器），你可能还需要安装一些系统依赖：
-> ```bash
-> npx playwright install-deps
-> ```
+> **注意**：如果在 Linux 服务器上运行（特别是无图形界面的服务器），你可能还需要安装一些系统依赖。如果是这样，可以使用 `npx playwright install-deps` 来安装底层库。
 
 ---
 
@@ -70,7 +66,7 @@ const targetVolumeName = "第四卷：新的开始";
 ```
 
 ### 2. 运行脚本
-在终端中执行以下命令运行脚本：
+安装完 CLI 后，你无需通过 `node` 命令，而是直接通过配置好的 `playwright-cli` 或者继续使用 `node` 运行：
 ```bash
 node fanqie-test/create_chapter.js
 ```
