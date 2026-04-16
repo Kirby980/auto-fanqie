@@ -243,13 +243,16 @@ for (let i = 0; i < args.length; i++) {
             const oneLineText = rowText.replace(/\s+/g, ' ');
 
             const hasStatus = oneLineText.includes('待审核') || oneLineText.includes('审核中') || oneLineText.includes('已发布');
-            const hasChapterKeyword = oneLineText.includes('第') && oneLineText.includes('章');
+            
+            // 为了应对番茄后台可能的标题截断（如"第76章 因果的..."），我们取标题的前10个字符进行模糊匹配验证
+            const titleToMatch = chapterTitle ? chapterTitle.substring(0, 10) : '';
+            const hasCorrectTitle = titleToMatch ? oneLineText.includes(titleToMatch) : true;
 
             if (hasStatus) {
                 console.log(`✅ 最终验证通过！最新章节状态正常。`);
                 console.log(`📄 抓取到的最新章节信息: [ ${oneLineText} ]`);
-                if (!hasChapterKeyword) {
-                    console.log(`⚠️ 提示：标题中似乎没有检测到"第X章"的格式，请确认这是否符合你的预期。`);
+                if (titleToMatch && !hasCorrectTitle) {
+                    console.log(`⚠️ 提示：最新章节列表中似乎没有匹配到刚刚发布的标题前缀 "${titleToMatch}"，请手动确认。`);
                 }
                 console.log("🎉 真正的发布成功！流程彻底执行完毕！");
             } else {

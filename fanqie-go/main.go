@@ -289,13 +289,25 @@ func main() {
 						oneLineText := strings.Join(words, " ")
 						
 						hasStatus := strings.Contains(oneLineText, "待审核") || strings.Contains(oneLineText, "审核中") || strings.Contains(oneLineText, "已发布")
-						hasChapterKeyword := strings.Contains(oneLineText, "第") && strings.Contains(oneLineText, "章")
+						
+						// 为了应对番茄后台可能的标题截断（如"第76章 因果的..."），我们取标题的前10个字符进行模糊匹配验证
+						// Go 中处理中文字符串截取需要转为 rune 切片
+						titleRunes := []rune(chapterTitle)
+						matchLen := 10
+						if len(titleRunes) < matchLen {
+							matchLen = len(titleRunes)
+						}
+						titleToMatch := string(titleRunes[:matchLen])
+						hasCorrectTitle := true
+						if titleToMatch != "" {
+							hasCorrectTitle = strings.Contains(oneLineText, titleToMatch)
+						}
 
 						if hasStatus {
 							fmt.Println("✅ 最终验证通过！最新章节状态正常。")
 							fmt.Printf("📄 抓取到的最新章节信息: [ %s ]\n", oneLineText)
-							if !hasChapterKeyword {
-								fmt.Println("⚠️ 提示：标题中似乎没有检测到\"第X章\"的格式，请确认这是否符合你的预期。")
+							if titleToMatch != "" && !hasCorrectTitle {
+								fmt.Printf("⚠️ 提示：最新章节列表中似乎没有匹配到刚刚发布的标题前缀 \"%s\"，请手动确认。\n", titleToMatch)
 							}
 							fmt.Println("🎉 真正的发布成功！流程彻底执行完毕！")
 						} else {
