@@ -51,7 +51,7 @@ func main() {
 	cliArg := "playwright-cli"
 
 	commands := [][]string{
-		{cli, cliArg, "open", "https://writer.fanqienovel.com/", "--channel=chrome", "--headed", "--persistent"},
+		{cli, cliArg, "open", "https://fanqienovel.com/main/writer/book-manage", "--channel=chrome", "--headed", "--persistent"},
 		{cli, cliArg, "click", fmt.Sprintf("text=%s", bookName)},
 		{cli, cliArg, "click", "text=新建章节"},
 		{cli, cliArg, "fill", "input[placeholder*='章节名称']", chapterTitle},

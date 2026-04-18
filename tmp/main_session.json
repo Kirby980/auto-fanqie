@@ -1,0 +1,970 @@
+{
+  "key": "agent:main:main",
+  "value": {
+    "sessionId": "a2edcbb2-68f7-4ecc-a32d-0a6425e2a464",
+    "updatedAt": 1776429084977,
+    "systemSent": true,
+    "abortedLastRun": false,
+    "chatType": "direct",
+    "deliveryContext": {
+      "channel": "whatsapp",
+      "to": "+8617779903860",
+      "accountId": "default"
+    },
+    "lastChannel": "whatsapp",
+    "lastTo": "+8617779903860",
+    "lastAccountId": "default",
+    "origin": {
+      "label": "+8617779903860",
+      "provider": "whatsapp",
+      "surface": "whatsapp",
+      "chatType": "direct",
+      "from": "+8617779903860",
+      "to": "+8617779903860",
+      "accountId": "default"
+    },
+    "sessionFile": "/Users/hyz/.openclaw/agents/main/sessions/a2edcbb2-68f7-4ecc-a32d-0a6425e2a464.jsonl",
+    "compactionCount": 0,
+    "skillsSnapshot": {
+      "prompt": "\n\nThe following skills provide specialized instructions for specific tasks.\nUse the read tool to load a skill's file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>1password</name>\n    <description>Set up and use 1Password CLI (op). Use when installing the CLI, enabling desktop app integration, signing in (single or multi-account), or reading/injecting/running secrets via op.</description>\n    <location>~/openclaw/skills/1password/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>apple-notes</name>\n    <description>Manage Apple Notes via the `memo` CLI on macOS (create, view, edit, delete, search, move, and export notes). Use when a user asks OpenClaw to add a note, list notes, search notes, or manage note folders.</description>\n    <location>~/openclaw/skills/apple-notes/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>apple-reminders</name>\n    <description>Manage Apple Reminders via remindctl CLI (list, add, edit, complete, delete). Supports lists, date filters, and JSON/plain output.</description>\n    <location>~/openclaw/skills/apple-reminders/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>clawhub</name>\n    <description>Use the ClawHub CLI to search, install, update, and publish agent skills from clawhub.com. Use when you need to fetch new skills on the fly, sync installed skills to latest or a specific version, or publish new/updated skill folders with the npm-installed clawhub CLI.</description>\n    <location>~/openclaw/skills/clawhub/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>coding-agent</name>\n    <description>Delegate coding tasks to Codex, Claude Code, or Pi agents via background process. Use when: (1) building/creating new features or apps, (2) reviewing PRs (spawn in temp dir), (3) refactoring large codebases, (4) iterative coding that needs file exploration. NOT for: simple one-liner fixes (just edit), reading code (use read tool), thread-bound ACP harness requests in chat (for example spawn/run Codex or Claude Code in a Discord thread; use sessions_spawn with runtime:&quot;acp&quot;), or any work in ~/clawd workspace (never spawn agents here). Claude Code: use --print --permission-mode bypassPermissions (no PTY). Codex/Pi/OpenCode: pty:true required.</description>\n    <location>~/openclaw/skills/coding-agent/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>discord</name>\n    <description>Discord ops via the message tool (channel=discord).</description>\n    <location>~/openclaw/skills/discord/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>fanqie-publisher</name>\n    <description>Automate Fanqie Novel publishing workflow via playwright-cli, with built-in character count validation.</description>\n    <location>~/.openclaw/skills/fanqie-publisher/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>gemini</name>\n    <description>Gemini CLI for one-shot Q&amp;A, summaries, and generation.</description>\n    <location>~/openclaw/skills/gemini/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>gh-issues</name>\n    <description>Fetch GitHub issues, spawn sub-agents to implement fixes and open PRs, then monitor and address PR review comments. Usage: /gh-issues [owner/repo] [--label bug] [--limit 5] [--milestone v1.0] [--assignee @me] [--fork user/repo] [--watch] [--interval 5] [--reviews-only] [--cron] [--dry-run] [--model glm-5] [--notify-channel -1002381931352]</description>\n    <location>~/openclaw/skills/gh-issues/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>github</name>\n    <description>GitHub operations via `gh` CLI: issues, PRs, CI runs, code review, API queries. Use when: (1) checking PR status or CI, (2) creating/commenting on issues, (3) listing/filtering PRs or issues, (4) viewing run logs. NOT for: complex web UI interactions requiring manual browser flows (use browser tooling when available), bulk operations across many repos (script with gh api), or when gh auth is not configured.</description>\n    <location>~/openclaw/skills/github/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>gog</name>\n    <description>Google Workspace CLI for Gmail, Calendar, Drive, Contacts, Sheets, and Docs.</description>\n    <location>~/openclaw/skills/gog/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>healthcheck</name>\n    <description>Host security hardening and risk-tolerance configuration for OpenClaw deployments. Use when a user asks for security audits, firewall/SSH/update hardening, risk posture, exposure review, OpenClaw cron scheduling for periodic checks, or version status checks on a machine running OpenClaw (laptop, workstation, Pi, VPS).</description>\n    <location>~/openclaw/skills/healthcheck/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>himalaya</name>\n    <description>CLI to manage emails via IMAP/SMTP. Use `himalaya` to list, read, write, reply, forward, search, and organize emails from the terminal. Supports multiple accounts and message composition with MML (MIME Meta Language).</description>\n    <location>~/openclaw/skills/himalaya/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>mcporter</name>\n    <description>Use the mcporter CLI to list, configure, auth, and call MCP servers/tools directly (HTTP or stdio), including ad-hoc servers, config edits, and CLI/type generation.</description>\n    <location>~/openclaw/skills/mcporter/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>model-usage</name>\n    <description>Use CodexBar CLI local cost usage to summarize per-model usage for Codex or Claude, including the current (most recent) model or a full model breakdown. Trigger when asked for model-level usage/cost data from codexbar, or when you need a scriptable per-model summary from codexbar cost JSON.</description>\n    <location>~/openclaw/skills/model-usage/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>nano-pdf</name>\n    <description>Edit PDFs with natural-language instructions using the nano-pdf CLI.</description>\n    <location>~/openclaw/skills/nano-pdf/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>node-connect</name>\n    <description>Diagnose OpenClaw node connection and pairing failures for Android, iOS, and macOS companion apps. Use when QR/setup code/manual connect fails, local Wi-Fi works but VPS/tailnet does not, or errors mention pairing required, unauthorized, bootstrap token invalid or expired, gateway.bind, gateway.remote.url, Tailscale, or plugins.entries.device-pair.config.publicUrl.</description>\n    <location>~/openclaw/skills/node-connect/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>obsidian</name>\n    <description>Work with Obsidian vaults (plain Markdown notes) and automate via obsidian-cli.</description>\n    <location>~/openclaw/skills/obsidian/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>openai-whisper</name>\n    <description>Local speech-to-text with the Whisper CLI (no API key).</description>\n    <location>~/openclaw/skills/openai-whisper/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>openspec-apply-change</name>\n    <description>Implement tasks from an OpenSpec change. Use when the user wants to start implementing, continue implementation, or work through tasks.</description>\n    <location>~/.openclaw/skills/openspec-apply-change/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>openspec-archive-change</name>\n    <description>Archive a completed change in the experimental workflow. Use when the user wants to finalize and archive a change after implementation is complete.</description>\n    <location>~/.openclaw/skills/openspec-archive-change/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>openspec-explore</name>\n    <description>Enter explore mode - a thinking partner for exploring ideas, investigating problems, and clarifying requirements. Use when the user wants to think through something before or during a change.</description>\n    <location>~/.openclaw/skills/openspec-explore/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>openspec-propose</name>\n    <description>Propose a new change with all artifacts generated in one step. Use when the user wants to quickly describe what they want to build and get a complete proposal with design, specs, and tasks ready for implementation.</description>\n    <location>~/.openclaw/skills/openspec-propose/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>peekaboo</name>\n    <description>Capture and automate macOS UI with the Peekaboo CLI.</description>\n    <location>~/openclaw/skills/peekaboo/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>playwright-cli</name>\n    <description>Automate browser interactions, test web pages and work with Playwright tests.</description>\n    <location>~/.openclaw/workspace/skills/playwright-cli/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>session-logs</name>\n    <description>Search and analyze your own session logs (older/parent conversations) using jq.</description>\n    <location>~/openclaw/skills/session-logs/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>skill-creator</name>\n    <description>Create, edit, improve, or audit AgentSkills. Use when creating a new skill from scratch or when asked to improve, review, audit, tidy up, or clean up an existing skill or SKILL.md file. Also use when editing or restructuring a skill directory (moving files to references/ or scripts/, removing stale content, validating against the AgentSkills spec). Triggers on phrases like &quot;create a skill&quot;, &quot;author a skill&quot;, &quot;tidy up a skill&quot;, &quot;improve this skill&quot;, &quot;review the skill&quot;, &quot;clean up the skill&quot;, &quot;audit the skill&quot;.</description>\n    <location>~/openclaw/skills/skill-creator/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>spotify-player</name>\n    <description>Terminal Spotify playback/search via spogo (preferred) or spotify_player.</description>\n    <location>~/openclaw/skills/spotify-player/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>summarize</name>\n    <description>Summarize or extract text/transcripts from URLs, podcasts, and local files (great fallback for “transcribe this YouTube/video”).</description>\n    <location>~/openclaw/skills/summarize/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>taskflow</name>\n    <description>Use when work should span one or more detached tasks but still behave like one job with a single owner context. TaskFlow is the durable flow substrate under authoring layers like Lobster, ACPX, plugins, or plain code. Keep conditional logic in the caller; use TaskFlow for flow identity, child-task linkage, waiting state, revision-checked mutations, and user-facing emergence.</description>\n    <location>~/openclaw/skills/taskflow/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>taskflow-inbox-triage</name>\n    <description>Example TaskFlow authoring pattern for inbox triage. Use when messages need different treatment based on intent, with some routes notifying immediately, some waiting on outside answers, and others rolling into a later summary.</description>\n    <location>~/openclaw/skills/taskflow-inbox-triage/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>things-mac</name>\n    <description>Manage Things 3 via the `things` CLI on macOS (add/update projects+todos via URL scheme; read/search/list from the local Things database). Use when a user asks OpenClaw to add a task to Things, list inbox/today/upcoming, search tasks, or inspect projects/areas/tags.</description>\n    <location>~/openclaw/skills/things-mac/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>video-frames</name>\n    <description>Extract frames or short clips from videos using ffmpeg.</description>\n    <location>~/openclaw/skills/video-frames/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>wacli</name>\n    <description>Send WhatsApp messages to other people or search/sync WhatsApp history via the wacli CLI (not for normal user chats).</description>\n    <location>~/openclaw/skills/wacli/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>weather</name>\n    <description>Get current weather and forecasts via wttr.in or Open-Meteo. Use when: user asks about weather, temperature, or forecasts for any location. NOT for: historical weather data, severe weather alerts, or detailed meteorological analysis. No API key needed.</description>\n    <location>~/openclaw/skills/weather/SKILL.md</location>\n  </skill>\n</available_skills>",
+      "skills": [
+        {
+          "name": "1password",
+          "requiredEnv": []
+        },
+        {
+          "name": "apple-notes",
+          "requiredEnv": []
+        },
+        {
+          "name": "apple-reminders",
+          "requiredEnv": []
+        },
+        {
+          "name": "clawhub",
+          "requiredEnv": []
+        },
+        {
+          "name": "coding-agent",
+          "requiredEnv": []
+        },
+        {
+          "name": "discord",
+          "requiredEnv": []
+        },
+        {
+          "name": "fanqie-publisher"
+        },
+        {
+          "name": "gemini",
+          "requiredEnv": []
+        },
+        {
+          "name": "gh-issues",
+          "primaryEnv": "GH_TOKEN",
+          "requiredEnv": []
+        },
+        {
+          "name": "github",
+          "requiredEnv": []
+        },
+        {
+          "name": "gog",
+          "requiredEnv": []
+        },
+        {
+          "name": "healthcheck"
+        },
+        {
+          "name": "himalaya",
+          "requiredEnv": []
+        },
+        {
+          "name": "mcporter",
+          "requiredEnv": []
+        },
+        {
+          "name": "model-usage",
+          "requiredEnv": []
+        },
+        {
+          "name": "nano-pdf",
+          "requiredEnv": []
+        },
+        {
+          "name": "node-connect"
+        },
+        {
+          "name": "obsidian",
+          "requiredEnv": []
+        },
+        {
+          "name": "openai-whisper",
+          "requiredEnv": []
+        },
+        {
+          "name": "openspec-apply-change"
+        },
+        {
+          "name": "openspec-archive-change"
+        },
+        {
+          "name": "openspec-explore"
+        },
+        {
+          "name": "openspec-propose"
+        },
+        {
+          "name": "peekaboo",
+          "requiredEnv": []
+        },
+        {
+          "name": "playwright-cli"
+        },
+        {
+          "name": "session-logs",
+          "requiredEnv": []
+        },
+        {
+          "name": "skill-creator"
+        },
+        {
+          "name": "spotify-player",
+          "requiredEnv": []
+        },
+        {
+          "name": "summarize",
+          "requiredEnv": []
+        },
+        {
+          "name": "taskflow"
+        },
+        {
+          "name": "taskflow-inbox-triage"
+        },
+        {
+          "name": "things-mac",
+          "requiredEnv": []
+        },
+        {
+          "name": "video-frames",
+          "requiredEnv": []
+        },
+        {
+          "name": "wacli",
+          "requiredEnv": []
+        },
+        {
+          "name": "weather",
+          "requiredEnv": []
+        }
+      ],
+      "resolvedSkills": [
+        {
+          "name": "1password",
+          "description": "Set up and use 1Password CLI (op). Use when installing the CLI, enabling desktop app integration, signing in (single or multi-account), or reading/injecting/running secrets via op.",
+          "filePath": "/Users/hyz/openclaw/skills/1password/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/1password",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/1password/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/1password"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "apple-notes",
+          "description": "Manage Apple Notes via the `memo` CLI on macOS (create, view, edit, delete, search, move, and export notes). Use when a user asks OpenClaw to add a note, list notes, search notes, or manage note folders.",
+          "filePath": "/Users/hyz/openclaw/skills/apple-notes/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/apple-notes",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/apple-notes/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/apple-notes"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "apple-reminders",
+          "description": "Manage Apple Reminders via remindctl CLI (list, add, edit, complete, delete). Supports lists, date filters, and JSON/plain output.",
+          "filePath": "/Users/hyz/openclaw/skills/apple-reminders/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/apple-reminders",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/apple-reminders/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/apple-reminders"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "clawhub",
+          "description": "Use the ClawHub CLI to search, install, update, and publish agent skills from clawhub.com. Use when you need to fetch new skills on the fly, sync installed skills to latest or a specific version, or publish new/updated skill folders with the npm-installed clawhub CLI.",
+          "filePath": "/Users/hyz/openclaw/skills/clawhub/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/clawhub",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/clawhub/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/clawhub"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "coding-agent",
+          "description": "Delegate coding tasks to Codex, Claude Code, or Pi agents via background process. Use when: (1) building/creating new features or apps, (2) reviewing PRs (spawn in temp dir), (3) refactoring large codebases, (4) iterative coding that needs file exploration. NOT for: simple one-liner fixes (just edit), reading code (use read tool), thread-bound ACP harness requests in chat (for example spawn/run Codex or Claude Code in a Discord thread; use sessions_spawn with runtime:\"acp\"), or any work in ~/clawd workspace (never spawn agents here). Claude Code: use --print --permission-mode bypassPermissions (no PTY). Codex/Pi/OpenCode: pty:true required.",
+          "filePath": "/Users/hyz/openclaw/skills/coding-agent/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/coding-agent",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/coding-agent/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/coding-agent"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "discord",
+          "description": "Discord ops via the message tool (channel=discord).",
+          "filePath": "/Users/hyz/openclaw/skills/discord/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/discord",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/discord/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/discord"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "fanqie-publisher",
+          "description": "Automate Fanqie Novel publishing workflow via playwright-cli, with built-in character count validation.",
+          "filePath": "/Users/hyz/.openclaw/skills/fanqie-publisher/SKILL.md",
+          "baseDir": "/Users/hyz/.openclaw/skills/fanqie-publisher",
+          "source": "openclaw-managed",
+          "sourceInfo": {
+            "path": "/Users/hyz/.openclaw/skills/fanqie-publisher/SKILL.md",
+            "source": "openclaw-managed",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/.openclaw/skills/fanqie-publisher"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "gemini",
+          "description": "Gemini CLI for one-shot Q&A, summaries, and generation.",
+          "filePath": "/Users/hyz/openclaw/skills/gemini/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/gemini",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/gemini/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/gemini"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "gh-issues",
+          "description": "Fetch GitHub issues, spawn sub-agents to implement fixes and open PRs, then monitor and address PR review comments. Usage: /gh-issues [owner/repo] [--label bug] [--limit 5] [--milestone v1.0] [--assignee @me] [--fork user/repo] [--watch] [--interval 5] [--reviews-only] [--cron] [--dry-run] [--model glm-5] [--notify-channel -1002381931352]",
+          "filePath": "/Users/hyz/openclaw/skills/gh-issues/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/gh-issues",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/gh-issues/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/gh-issues"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "github",
+          "description": "GitHub operations via `gh` CLI: issues, PRs, CI runs, code review, API queries. Use when: (1) checking PR status or CI, (2) creating/commenting on issues, (3) listing/filtering PRs or issues, (4) viewing run logs. NOT for: complex web UI interactions requiring manual browser flows (use browser tooling when available), bulk operations across many repos (script with gh api), or when gh auth is not configured.",
+          "filePath": "/Users/hyz/openclaw/skills/github/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/github",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/github/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/github"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "gog",
+          "description": "Google Workspace CLI for Gmail, Calendar, Drive, Contacts, Sheets, and Docs.",
+          "filePath": "/Users/hyz/openclaw/skills/gog/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/gog",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/gog/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/gog"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "healthcheck",
+          "description": "Host security hardening and risk-tolerance configuration for OpenClaw deployments. Use when a user asks for security audits, firewall/SSH/update hardening, risk posture, exposure review, OpenClaw cron scheduling for periodic checks, or version status checks on a machine running OpenClaw (laptop, workstation, Pi, VPS).",
+          "filePath": "/Users/hyz/openclaw/skills/healthcheck/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/healthcheck",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/healthcheck/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/healthcheck"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "himalaya",
+          "description": "CLI to manage emails via IMAP/SMTP. Use `himalaya` to list, read, write, reply, forward, search, and organize emails from the terminal. Supports multiple accounts and message composition with MML (MIME Meta Language).",
+          "filePath": "/Users/hyz/openclaw/skills/himalaya/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/himalaya",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/himalaya/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/himalaya"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "mcporter",
+          "description": "Use the mcporter CLI to list, configure, auth, and call MCP servers/tools directly (HTTP or stdio), including ad-hoc servers, config edits, and CLI/type generation.",
+          "filePath": "/Users/hyz/openclaw/skills/mcporter/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/mcporter",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/mcporter/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/mcporter"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "model-usage",
+          "description": "Use CodexBar CLI local cost usage to summarize per-model usage for Codex or Claude, including the current (most recent) model or a full model breakdown. Trigger when asked for model-level usage/cost data from codexbar, or when you need a scriptable per-model summary from codexbar cost JSON.",
+          "filePath": "/Users/hyz/openclaw/skills/model-usage/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/model-usage",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/model-usage/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/model-usage"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "nano-pdf",
+          "description": "Edit PDFs with natural-language instructions using the nano-pdf CLI.",
+          "filePath": "/Users/hyz/openclaw/skills/nano-pdf/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/nano-pdf",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/nano-pdf/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/nano-pdf"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "node-connect",
+          "description": "Diagnose OpenClaw node connection and pairing failures for Android, iOS, and macOS companion apps. Use when QR/setup code/manual connect fails, local Wi-Fi works but VPS/tailnet does not, or errors mention pairing required, unauthorized, bootstrap token invalid or expired, gateway.bind, gateway.remote.url, Tailscale, or plugins.entries.device-pair.config.publicUrl.",
+          "filePath": "/Users/hyz/openclaw/skills/node-connect/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/node-connect",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/node-connect/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/node-connect"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "obsidian",
+          "description": "Work with Obsidian vaults (plain Markdown notes) and automate via obsidian-cli.",
+          "filePath": "/Users/hyz/openclaw/skills/obsidian/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/obsidian",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/obsidian/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/obsidian"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "openai-whisper",
+          "description": "Local speech-to-text with the Whisper CLI (no API key).",
+          "filePath": "/Users/hyz/openclaw/skills/openai-whisper/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/openai-whisper",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/openai-whisper/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/openai-whisper"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "openspec-apply-change",
+          "description": "Implement tasks from an OpenSpec change. Use when the user wants to start implementing, continue implementation, or work through tasks.",
+          "filePath": "/Users/hyz/.openclaw/skills/openspec-apply-change/SKILL.md",
+          "baseDir": "/Users/hyz/.openclaw/skills/openspec-apply-change",
+          "source": "openclaw-managed",
+          "sourceInfo": {
+            "path": "/Users/hyz/.openclaw/skills/openspec-apply-change/SKILL.md",
+            "source": "openclaw-managed",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/.openclaw/skills/openspec-apply-change"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "openspec-archive-change",
+          "description": "Archive a completed change in the experimental workflow. Use when the user wants to finalize and archive a change after implementation is complete.",
+          "filePath": "/Users/hyz/.openclaw/skills/openspec-archive-change/SKILL.md",
+          "baseDir": "/Users/hyz/.openclaw/skills/openspec-archive-change",
+          "source": "openclaw-managed",
+          "sourceInfo": {
+            "path": "/Users/hyz/.openclaw/skills/openspec-archive-change/SKILL.md",
+            "source": "openclaw-managed",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/.openclaw/skills/openspec-archive-change"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "openspec-explore",
+          "description": "Enter explore mode - a thinking partner for exploring ideas, investigating problems, and clarifying requirements. Use when the user wants to think through something before or during a change.",
+          "filePath": "/Users/hyz/.openclaw/skills/openspec-explore/SKILL.md",
+          "baseDir": "/Users/hyz/.openclaw/skills/openspec-explore",
+          "source": "openclaw-managed",
+          "sourceInfo": {
+            "path": "/Users/hyz/.openclaw/skills/openspec-explore/SKILL.md",
+            "source": "openclaw-managed",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/.openclaw/skills/openspec-explore"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "openspec-propose",
+          "description": "Propose a new change with all artifacts generated in one step. Use when the user wants to quickly describe what they want to build and get a complete proposal with design, specs, and tasks ready for implementation.",
+          "filePath": "/Users/hyz/.openclaw/skills/openspec-propose/SKILL.md",
+          "baseDir": "/Users/hyz/.openclaw/skills/openspec-propose",
+          "source": "openclaw-managed",
+          "sourceInfo": {
+            "path": "/Users/hyz/.openclaw/skills/openspec-propose/SKILL.md",
+            "source": "openclaw-managed",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/.openclaw/skills/openspec-propose"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "peekaboo",
+          "description": "Capture and automate macOS UI with the Peekaboo CLI.",
+          "filePath": "/Users/hyz/openclaw/skills/peekaboo/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/peekaboo",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/peekaboo/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/peekaboo"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "playwright-cli",
+          "description": "Automate browser interactions, test web pages and work with Playwright tests.",
+          "filePath": "/Users/hyz/.openclaw/workspace/skills/playwright-cli/SKILL.md",
+          "baseDir": "/Users/hyz/.openclaw/workspace/skills/playwright-cli",
+          "source": "openclaw-workspace",
+          "sourceInfo": {
+            "path": "/Users/hyz/.openclaw/workspace/skills/playwright-cli/SKILL.md",
+            "source": "openclaw-workspace",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/.openclaw/workspace/skills/playwright-cli"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "session-logs",
+          "description": "Search and analyze your own session logs (older/parent conversations) using jq.",
+          "filePath": "/Users/hyz/openclaw/skills/session-logs/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/session-logs",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/session-logs/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/session-logs"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "skill-creator",
+          "description": "Create, edit, improve, or audit AgentSkills. Use when creating a new skill from scratch or when asked to improve, review, audit, tidy up, or clean up an existing skill or SKILL.md file. Also use when editing or restructuring a skill directory (moving files to references/ or scripts/, removing stale content, validating against the AgentSkills spec). Triggers on phrases like \"create a skill\", \"author a skill\", \"tidy up a skill\", \"improve this skill\", \"review the skill\", \"clean up the skill\", \"audit the skill\".",
+          "filePath": "/Users/hyz/openclaw/skills/skill-creator/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/skill-creator",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/skill-creator/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/skill-creator"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "spotify-player",
+          "description": "Terminal Spotify playback/search via spogo (preferred) or spotify_player.",
+          "filePath": "/Users/hyz/openclaw/skills/spotify-player/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/spotify-player",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/spotify-player/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/spotify-player"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "summarize",
+          "description": "Summarize or extract text/transcripts from URLs, podcasts, and local files (great fallback for “transcribe this YouTube/video”).",
+          "filePath": "/Users/hyz/openclaw/skills/summarize/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/summarize",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/summarize/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/summarize"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "taskflow",
+          "description": "Use when work should span one or more detached tasks but still behave like one job with a single owner context. TaskFlow is the durable flow substrate under authoring layers like Lobster, ACPX, plugins, or plain code. Keep conditional logic in the caller; use TaskFlow for flow identity, child-task linkage, waiting state, revision-checked mutations, and user-facing emergence.",
+          "filePath": "/Users/hyz/openclaw/skills/taskflow/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/taskflow",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/taskflow/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/taskflow"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "taskflow-inbox-triage",
+          "description": "Example TaskFlow authoring pattern for inbox triage. Use when messages need different treatment based on intent, with some routes notifying immediately, some waiting on outside answers, and others rolling into a later summary.",
+          "filePath": "/Users/hyz/openclaw/skills/taskflow-inbox-triage/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/taskflow-inbox-triage",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/taskflow-inbox-triage/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/taskflow-inbox-triage"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "things-mac",
+          "description": "Manage Things 3 via the `things` CLI on macOS (add/update projects+todos via URL scheme; read/search/list from the local Things database). Use when a user asks OpenClaw to add a task to Things, list inbox/today/upcoming, search tasks, or inspect projects/areas/tags.",
+          "filePath": "/Users/hyz/openclaw/skills/things-mac/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/things-mac",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/things-mac/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/things-mac"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "video-frames",
+          "description": "Extract frames or short clips from videos using ffmpeg.",
+          "filePath": "/Users/hyz/openclaw/skills/video-frames/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/video-frames",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/video-frames/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/video-frames"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "wacli",
+          "description": "Send WhatsApp messages to other people or search/sync WhatsApp history via the wacli CLI (not for normal user chats).",
+          "filePath": "/Users/hyz/openclaw/skills/wacli/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/wacli",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/wacli/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/wacli"
+          },
+          "disableModelInvocation": false
+        },
+        {
+          "name": "weather",
+          "description": "Get current weather and forecasts via wttr.in or Open-Meteo. Use when: user asks about weather, temperature, or forecasts for any location. NOT for: historical weather data, severe weather alerts, or detailed meteorological analysis. No API key needed.",
+          "filePath": "/Users/hyz/openclaw/skills/weather/SKILL.md",
+          "baseDir": "/Users/hyz/openclaw/skills/weather",
+          "source": "openclaw-bundled",
+          "sourceInfo": {
+            "path": "/Users/hyz/openclaw/skills/weather/SKILL.md",
+            "source": "openclaw-bundled",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "/Users/hyz/openclaw/skills/weather"
+          },
+          "disableModelInvocation": false
+        }
+      ],
+      "version": 0
+    },
+    "status": "failed",
+    "startedAt": 1776429051337,
+    "systemPromptReport": {
+      "source": "run",
+      "generatedAt": 1776427583248,
+      "sessionId": "a2edcbb2-68f7-4ecc-a32d-0a6425e2a464",
+      "sessionKey": "agent:main:main",
+      "provider": "google-gemini-cli",
+      "model": "gemini-3.1-pro-preview",
+      "workspaceDir": "/Users/hyz/.openclaw/workspace",
+      "bootstrapMaxChars": 12000,
+      "bootstrapTotalMaxChars": 60000,
+      "bootstrapTruncation": {
+        "warningMode": "once",
+        "warningShown": false,
+        "truncatedFiles": 0,
+        "nearLimitFiles": 1,
+        "totalNearLimit": false
+      },
+      "sandbox": {
+        "mode": "off",
+        "sandboxed": false
+      },
+      "systemPrompt": {
+        "chars": 127,
+        "projectContextChars": 0,
+        "nonProjectContextChars": 127
+      },
+      "injectedWorkspaceFiles": [
+        {
+          "name": "AGENTS.md",
+          "path": "/Users/hyz/.openclaw/workspace/AGENTS.md",
+          "missing": false,
+          "rawChars": 10870,
+          "injectedChars": 10870,
+          "truncated": false
+        },
+        {
+          "name": "SOUL.md",
+          "path": "/Users/hyz/.openclaw/workspace/SOUL.md",
+          "missing": false,
+          "rawChars": 1976,
+          "injectedChars": 1976,
+          "truncated": false
+        },
+        {
+          "name": "TOOLS.md",
+          "path": "/Users/hyz/.openclaw/workspace/TOOLS.md",
+          "missing": false,
+          "rawChars": 850,
+          "injectedChars": 850,
+          "truncated": false
+        },
+        {
+          "name": "IDENTITY.md",
+          "path": "/Users/hyz/.openclaw/workspace/IDENTITY.md",
+          "missing": false,
+          "rawChars": 455,
+          "injectedChars": 455,
+          "truncated": false
+        },
+        {
+          "name": "USER.md",
+          "path": "/Users/hyz/.openclaw/workspace/USER.md",
+          "missing": false,
+          "rawChars": 4731,
+          "injectedChars": 4731,
+          "truncated": false
+        },
+        {
+          "name": "HEARTBEAT.md",
+          "path": "/Users/hyz/.openclaw/workspace/HEARTBEAT.md",
+          "missing": false,
+          "rawChars": 167,
+          "injectedChars": 167,
+          "truncated": false
+        },
+        {
+          "name": "BOOTSTRAP.md",
+          "path": "/Users/hyz/.openclaw/workspace/BOOTSTRAP.md",
+          "missing": true,
+          "rawChars": 0,
+          "injectedChars": 66,
+          "truncated": false
+        },
+        {
+          "name": "MEMORY.md",
+          "path": "/Users/hyz/.openclaw/workspace/MEMORY.md",
+          "missing": false,
+          "rawChars": 1112,
+          "injectedChars": 1112,
+          "truncated": false
+        }
+      ],
+      "skills": {
+        "promptChars": 12512,
+        "entries": [
+          {
+            "name": "1password",
+            "blockChars": 319
+          },
+          {
+            "name": "apple-notes",
+            "blockChars": 346
+          },
+          {
+            "name": "apple-reminders",
+            "blockChars": 281
+          },
+          {
+            "name": "clawhub",
+            "blockChars": 403
+          },
+          {
+            "name": "coding-agent",
+            "blockChars": 803
+          },
+          {
+            "name": "discord",
+            "blockChars": 186
+          },
+          {
+            "name": "fanqie-publisher",
+            "blockChars": 257
+          },
+          {
+            "name": "gemini",
+            "blockChars": 192
+          },
+          {
+            "name": "gh-issues",
+            "blockChars": 479
+          },
+          {
+            "name": "github",
+            "blockChars": 543
+          },
+          {
+            "name": "gog",
+            "blockChars": 203
+          },
+          {
+            "name": "healthcheck",
+            "blockChars": 462
+          },
+          {
+            "name": "himalaya",
+            "blockChars": 354
+          },
+          {
+            "name": "mcporter",
+            "blockChars": 301
+          },
+          {
+            "name": "model-usage",
+            "blockChars": 434
+          },
+          {
+            "name": "nano-pdf",
+            "blockChars": 205
+          },
+          {
+            "name": "node-connect",
+            "blockChars": 512
+          },
+          {
+            "name": "obsidian",
+            "blockChars": 216
+          },
+          {
+            "name": "openai-whisper",
+            "blockChars": 204
+          },
+          {
+            "name": "openspec-apply-change",
+            "blockChars": 299
+          },
+          {
+            "name": "openspec-archive-change",
+            "blockChars": 315
+          },
+          {
+            "name": "openspec-explore",
+            "blockChars": 345
+          },
+          {
+            "name": "openspec-propose",
+            "blockChars": 368
+          },
+          {
+            "name": "peekaboo",
+            "blockChars": 189
+          },
+          {
+            "name": "playwright-cli",
+            "blockChars": 237
+          },
+          {
+            "name": "session-logs",
+            "blockChars": 224
+          },
+          {
+            "name": "skill-creator",
+            "blockChars": 730
+          },
+          {
+            "name": "spotify-player",
+            "blockChars": 222
+          },
+          {
+            "name": "summarize",
+            "blockChars": 267
+          },
+          {
+            "name": "taskflow",
+            "blockChars": 514
+          },
+          {
+            "name": "taskflow-inbox-triage",
+            "blockChars": 389
+          },
+          {
+            "name": "things-mac",
+            "blockChars": 407
+          },
+          {
+            "name": "video-frames",
+            "blockChars": 200
+          },
+          {
+            "name": "wacli",
+            "blockChars": 248
+          },
+          {
+            "name": "weather",
+            "blockChars": 387
+          }
+        ]
+      },
+      "tools": {
+        "listChars": 0,
+        "schemaChars": 0,
+        "entries": []
+      }
+    },
+    "inputTokens": 17520,
+    "outputTokens": 42,
+    "cacheRead": 0,
+    "cacheWrite": 0,
+    "estimatedCostUsd": 0.005361,
+    "totalTokensFresh": false,
+    "lastHeartbeatText": "NO_REPLY",
+    "lastHeartbeatSentAt": 1776355326637,
+    "cliSessionIds": {
+      "google-gemini-cli": "cb162389-2d42-4a23-abe8-4d6fa5d269eb"
+    },
+    "cliSessionBindings": {
+      "google-gemini-cli": {
+        "sessionId": "cb162389-2d42-4a23-abe8-4d6fa5d269eb",
+        "authProfileId": "google-gemini-cli:hyz17779903860@gmail.com",
+        "authEpoch": "d49bf2e7da01cddbc0b27a451518e4d0ef054ab8047d76039d82e3ae00be1472",
+        "extraSystemPromptHash": "36dfa3869d1a21c488bf64fe868ae4c3a55b2a9dd3cb7707bcde78d3cbc12789",
+        "mcpConfigHash": "c647dca0a8595d94ab36887b5a0cd64134c39031ee6f9ef278eb3ceaeb1f5ff6"
+      }
+    },
+    "channel": "whatsapp",
+    "providerOverride": "google-gemini-cli",
+    "modelOverride": "gemini-3.1-pro-preview",
+    "modelOverrideSource": "user",
+    "liveModelSwitchPending": true,
+    "authProfileOverride": "google-gemini-cli:hyz17779903860@gmail.com",
+    "authProfileOverrideSource": "auto",
+    "authProfileOverrideCompactionCount": 0,
+    "modelProvider": "google-gemini-cli",
+    "model": "gemini-3.1-pro-preview",
+    "contextTokens": 200000,
+    "endedAt": 1776429069927,
+    "runtimeMs": 18590
+  }
+}

@@ -53,8 +53,9 @@ npm install -g .
    ```bash
    fanqie-publisher install --skills
    ```
+   *注意：该命令会同时将 Skill 安装到当前项目的 `.claude/skills/`（适用于 Claude Code）和 `skills/`（适用于 OpenClaw）目录下。*
 
-安装完成后，你就可以直接对 Claude Code 等 AI 助手说：“使用 fanqie-publisher skill 帮我生成一章并发布到番茄后台”。
+安装完成后，你就可以直接对 Claude Code, OpenClaw 等 AI 助手说：“使用 fanqie-publisher skill 帮我生成一章并发布到番茄后台”。
 
 ---
 
@@ -63,7 +64,7 @@ npm install -g .
 ### 1. 首次登录（仅限首次使用）
 如果你是第一次使用该环境，必须先执行一次持久化登录命令。运行以下命令后，在弹出的 Chrome 窗口中扫码或输入密码登录番茄作家后台，登录成功后直接关闭窗口即可。登录状态将被持久化保存在本地。
 ```bash
-playwright-cli open https://writer.fanqienovel.com/ --browser=chrome --headed --persistent
+playwright-cli open https://fanqienovel.com/main/writer/book-manage --browser=chrome --headed --persistent
 ```
 
 ### 2. 脚本配置调整

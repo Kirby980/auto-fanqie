@@ -74,7 +74,7 @@ func main() {
 	}
 
 	fmt.Println("🌐 访问番茄小说作家后台...")
-	_, err = page.Goto("https://writer.fanqienovel.com/workspace", playwright.PageGotoOptions{
+	_, err = page.Goto("https://fanqienovel.com/main/writer/book-manage", playwright.PageGotoOptions{
 		Timeout: playwright.Float(60000),
 	})
 	if err != nil {
@@ -186,8 +186,18 @@ func main() {
 
 	if chapterTitle != "" {
 		fmt.Printf("👉 填写章节标题: %s\n", chapterTitle)
-		if err := page.Locator(`input[placeholder*="请输入标题"]`).Fill(chapterTitle); err != nil {
-			log.Fatalf("❌ 填写章节标题失败: %v", err)
+		titleLocator := page.GetByPlaceholder("请输入标题").First()
+		if err := titleLocator.Fill(chapterTitle); err != nil {
+			log.Printf("⚠️ 填写章节标题常规方法失败，尝试注入: %v\n", err)
+			page.Evaluate(`(t) => {
+				const el = document.querySelector('input[placeholder*="请输入标题"], .editor-title-input, .title-input');
+				if (el) {
+					el.value = t;
+					el.dispatchEvent(new Event('input', { bubbles: true }));
+					el.dispatchEvent(new Event('change', { bubbles: true }));
+					el.blur();
+				}
+			}`, chapterTitle)
 		}
 	}
 
@@ -195,9 +205,35 @@ func main() {
 		contentBytes, err := os.ReadFile(contentFile)
 		if err == nil {
 			fmt.Printf("👉 从文件读取并填写正文: %s\n", contentFile)
-			editor := page.Locator(".ql-editor").First()
-			if err := editor.Fill(string(contentBytes)); err != nil {
-				log.Fatalf("❌ 填写正文失败: %v", err)
+			
+			// Format text into paragraphs, skipping title lines
+			lines := strings.Split(string(contentBytes), "\n")
+			var htmlBuilder strings.Builder
+			for _, line := range lines {
+				p := strings.TrimSpace(line)
+				if p == "" {
+					continue
+				}
+				if strings.HasPrefix(p, "### 第") || (strings.HasPrefix(p, "第") && strings.Contains(p, "章")) {
+					continue
+				}
+				htmlBuilder.WriteString("<p>")
+				htmlBuilder.WriteString(p)
+				htmlBuilder.WriteString("</p>")
+			}
+			htmlContent := htmlBuilder.String()
+
+			_, err = page.Evaluate(`(html) => {
+				const el = document.querySelector('.ProseMirror, .ql-editor, [contenteditable="true"]:not(h1)');
+				if (el) {
+					el.innerHTML = html;
+					el.dispatchEvent(new Event('input', { bubbles: true }));
+					el.dispatchEvent(new Event('change', { bubbles: true }));
+					el.blur();
+				}
+			}`, htmlContent)
+			if err != nil {
+				log.Fatalf("❌ 注入正文失败: %v", err)
 			}
 		} else {
 			log.Printf("⚠️ 读取文件失败: %v\n", err)

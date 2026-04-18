@@ -34,7 +34,7 @@ fanqie-publisher validate --content-file chapter.txt --minHan 3000
 #### 首次登录（仅限用户首次使用）
 如果用户尚未登录，请指导用户运行此命令，在弹出的窗口中扫码登录，登录后关闭窗口即可：
 ```bash
-playwright-cli open https://writer.fanqienovel.com/ --browser=chrome --headed --persistent
+playwright-cli open https://fanqienovel.com/main/writer/book-manage --browser=chrome --headed --persistent
 ```
 
 #### 执行自动发布命令序列

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-const { countHan } = require('../lib/hanCount');
-const { fail, success } = require('../lib/result');
+const { countHanCharacters } = require('./lib/hanCount');
+const { fail, ok } = require('./lib/result');
 const fs = require('fs');
 
 // 简单的参数解析
@@ -20,17 +20,19 @@ for (let i = 0; i < args.length; i++) {
 }
 
 if (!contentFile || !fs.existsSync(contentFile)) {
-    fail('FILE_NOT_FOUND', `找不到正文文件: ${contentFile}`);
+    fail(1, { code: 'FILE_NOT_FOUND', message: `找不到正文文件: ${contentFile}` });
 }
 
 const content = fs.readFileSync(contentFile, 'utf8');
-const hanCount = countHan(content);
+const hanCount = countHanCharacters(content);
 
 if (hanCount < minHan) {
-    fail('CONTENT_TOO_SHORT', `正文汉字数不足：当前 ${hanCount}，要求 >= ${minHan}。请重写并扩写至满足字数要求后再发布。`, {
+    fail(2, { 
+        code: 'CONTENT_TOO_SHORT', 
+        message: `正文汉字数不足：当前 ${hanCount}，要求 >= ${minHan}。请重写并扩写至满足字数要求后再发布。`,
         hanCount,
         minHan
     });
 }
 
-success('validate', { hanCount, minHan });
+ok({ step: 'validate', hanCount, minHan });

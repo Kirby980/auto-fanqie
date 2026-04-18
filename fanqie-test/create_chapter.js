@@ -1,274 +1,203 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
 
-// 解析命令行参数
 const args = process.argv.slice(2);
-let novelName = "重生1982：我有一片禁忌海"; // 默认书名
-let targetVolumeName = "第四卷：新的开始"; // 默认卷名
-let chapterTitle = "";
-let contentFile = "";
+let novelName = '';
+let volumeName = '';
+let chapterTitle = '';
+let contentFile = '';
 
 for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--novel' && args[i + 1]) novelName = args[i + 1];
-    if (args[i] === '--volume' && args[i + 1]) targetVolumeName = args[i + 1];
-    if (args[i] === '--title' && args[i + 1]) chapterTitle = args[i + 1];
-    if (args[i] === '--file' && args[i + 1]) contentFile = args[i + 1];
+    if (args[i] === '--novel' && args[i+1]) {
+        novelName = args[i+1];
+        i++;
+    } else if (args[i] === '--volume' && args[i+1]) {
+        volumeName = args[i+1];
+        i++;
+    } else if (args[i] === '--title' && args[i+1]) {
+        chapterTitle = args[i+1];
+        i++;
+    } else if (args[i] === '--file' && args[i+1]) {
+        contentFile = args[i+1];
+        i++;
+    }
+}
+
+if (!chapterTitle || !contentFile) {
+    console.error("❌ 请提供章节标题和正文文件路径！");
+    process.exit(1);
 }
 
 (async () => {
-    console.log(`🚀 启动浏览器...
-    书名: ${novelName}
-    卷名: ${targetVolumeName}
-    标题: ${chapterTitle || '(未指定)'}
-    内容文件: ${contentFile || '(未指定)'}
-    `);
-    // ==========================================
-        // 准备浏览器启动配置，使用持久化上下文
-        // ==========================================
-        const userDataDir = require('path').join(require('os').homedir(), '.playwright', 'fanqie-profile');
-        
-        // 使用 launchPersistentContext 而不是 launch
-        // 这样可以保留登录状态，且可以直接指定浏览器频道
-        const context = await chromium.launchPersistentContext(userDataDir, {
-            headless: false, // 必须开启 headed 模式以避免被轻易检测为机器人
-            channel: 'chrome', // 强制使用本地真实的 Google Chrome
-            viewport: { width: 1280, height: 720 },
-            args: [
-                '--disable-blink-features=AutomationControlled', // 隐藏 webdriver 标记
-                '--disable-infobars', // 隐藏"Chrome 正受到自动测试软件的控制"横幅
-            ]
-        });
-        
-        const page = context.pages()[0] || await context.newPage();
-
-        // 反爬虫注入：抹除 webdriver 痕迹
-        await page.addInitScript(() => {
-            Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-        });
+    const userDataDir = require('path').join(require('os').homedir(), '.playwright', 'fanqie-profile');
+    const context = await chromium.launchPersistentContext(userDataDir, {
+        headless: false, channel: 'chrome', viewport: null
+    });
+    let page = context.pages()[0] || await context.newPage();
 
     try {
-        console.log("🌐 访问番茄小说作家后台...");
-        await page.goto("https://writer.fanqienovel.com/workspace", { timeout: 60000 });
-
-        console.log("⏳ 等待页面加载（如果需要登录，请在此期间完成登录）...");
-        // 等待“我的小说”字样出现，确保已经登录并进入了主工作台
-        await page.waitForSelector('text=我的小说', { timeout: 60000 });
-
-        // ==========================================
-        // 第一步：选择对应名字的小说，点击“章节管理”
-        // ==========================================
-        console.log(`📖 查找小说: ${novelName} 并点击章节管理...`);
-
-        // 查找包含小说名字的卡片区块
-        // 实际 DOM 结构可能有所不同，这里使用通用方法：找到包含该书名的卡片，并在该卡片内点击“章节管理”按钮
-        const novelCard = page.locator('div').filter({ hasText: novelName }).last();
+        console.log("🌐 导航到管理页面...");
+        await page.goto("https://fanqienovel.com/main/writer/book-manage");
+        await page.waitForLoadState('networkidle');
+        await page.waitForTimeout(3000);
         
-        // 点击章节管理按钮（这里也可以使用 getByRole('button', { name: '章节管理' })）
-        const chapterManageBtn = novelCard.getByText('章节管理').first();
-        await chapterManageBtn.click();
-
-        // ==========================================
-        // 第二步：章节管理页面，确认分卷后点击“新建章节”
-        // ==========================================
-        console.log("👉 正在进入章节管理页面...");
-        
-        // 等待“新建章节”按钮出现，这代表第二页已经加载完毕
-        await page.waitForSelector('text=新建章节', { timeout: 30000 });
-        
-        // ------------------------------------------
-        // 分卷处理逻辑：检查并新建分卷
-        // ------------------------------------------
-        console.log(`🔍 检查当前分卷是否为: ${targetVolumeName}`);
-
-        // 点击分卷下拉框，展开分卷列表
-        // 注意：根据第二张截图，这个下拉框默认显示当前分卷（如"第三卷：轮回终结"）
-        const volumeDropdown = page.locator('.arco-select').first(); 
-        await volumeDropdown.click();
-        
-        // 等待下拉列表出现
-        await page.waitForTimeout(1000);
-        
-        // 检查目标分卷是否存在于下拉列表中
-        const volumeExists = await page.locator('.arco-select-option').filter({ hasText: targetVolumeName }).isVisible();
-        
-        if (volumeExists) {
-            console.log(`✅ 找到分卷: ${targetVolumeName}，直接选择`);
-            await page.locator('.arco-select-option').filter({ hasText: targetVolumeName }).click();
-        } else {
-            console.log(`⚠️ 未找到分卷: ${targetVolumeName}，准备新建分卷...`);
-            // 关闭下拉框 (点击页面空白处)
-            await page.mouse.click(0, 0);
-            await page.waitForTimeout(500);
-            
-            // 点击右上角的“编辑分卷”按钮
-            console.log("👉 点击“编辑分卷”按钮...");
-            await page.locator('button').filter({ hasText: '编辑分卷' }).click();
-            
-            // 等待分卷弹窗出现（根据第一张截图，弹窗标题为"分卷"）
-            await page.waitForSelector('div.arco-modal:has-text("分卷")', { timeout: 10000 });
-            
-            // 点击左下角的“+ 新建分卷”按钮
-            console.log("👉 在分卷弹窗中点击“+ 新建分卷”...");
-            await page.locator('.arco-modal').getByText('新建分卷').click();
-            
-            // 在新出现的分卷输入框中输入新分卷名称
-            // 通常新建的分卷输入框会出现在列表的最上方或者是一个新的输入框
-            console.log(`👉 输入新分卷名称: ${targetVolumeName}`);
-            // 假设新分卷出现一个空的 input
-            const newVolumeInput = page.locator('.arco-modal input[value=""]').first();
-            await newVolumeInput.fill(targetVolumeName);
-            
-            // 点击弹窗右下角的“确定”按钮保存分卷
-            console.log("👉 点击弹窗“确定”按钮保存...");
-            await page.locator('.arco-modal button').filter({ hasText: '确定' }).click();
-            
-            // 等待弹窗关闭和接口响应
-            await page.waitForTimeout(2000); 
-            
-            // 再次打开分卷下拉框并选择刚创建的分卷
-            await volumeDropdown.click();
-            await page.waitForTimeout(1000);
-            await page.locator('.arco-select-option').filter({ hasText: targetVolumeName }).click();
-            console.log(`✅ 成功选择新建的分卷: ${targetVolumeName}`);
-        }
-
-        // 在点击新建章节前，先保存当前章节管理页面的 URL，以便发布完成后回来验证
-        const chapterListUrl = page.url();
-        console.log(`👉 记录章节管理页面URL以便后续返回验证: ${chapterListUrl}`);
-
-        console.log("👉 确认分卷无误，点击“新建章节”按钮...");
-        // 匹配橙色的“新建章节”按钮并点击
-        const newChapterBtn = page.locator('button').filter({ hasText: '新建章节' }).first();
-        await newChapterBtn.click();
-
-        // ==========================================
-        // 第三步：进入写作（新建章节）页面并发布
-        // ==========================================
-        console.log("👉 正在进入新建章节编辑器页面...");
-        
-        // 等待输入标题的区域出现，代表成功进入了第三个页面
-        await page.waitForSelector('text=请输入标题', { timeout: 30000 });
-        console.log("✅ 成功进入第三个页面（章节编辑页）！");
-
-        // 模拟填写标题和正文
-        if (chapterTitle) {
-            console.log(`👉 填写章节标题: ${chapterTitle}`);
-            await page.locator('input[placeholder*="请输入标题"]').fill(chapterTitle);
-        }
-        
-        if (contentFile && fs.existsSync(contentFile)) {
-            console.log(`👉 从文件读取并填写正文: ${contentFile}`);
-            const content = fs.readFileSync(contentFile, 'utf8');
-            // 注意：番茄的富文本编辑器通常是可编辑的 div (如 contenteditable) 或 textarea
-            const editor = page.locator('.ql-editor').first(); // 根据实际页面调整类名
-            await editor.fill(content);
-        }
-
-        // 假设这里你已经自动填充了内容，我们将点击右上角的“下一步”或“发布”按钮
-        console.log("👉 点击右上角的发布/下一步按钮...");
-        // 找到页面右上角的按钮，通常文本是“发布”或“下一步”
-        const publishBtn = page.locator('button').filter({ hasText: /发布|下一步/ }).first();
-        await publishBtn.click();
-
-        // ------------------------------------------
-        // 处理各种可能弹出的发布检测弹窗
-        // ------------------------------------------
-        
-        // 1. 错别字提示弹窗 (可能出现)
-        // 弹窗文本: "检测到你还有错别字未修改，是否确定提交？"
-        try {
-            console.log("🔍 检测是否出现【错别字】提示弹窗...");
-            const typoModal = page.locator('.arco-modal:has-text("检测到你还有错别字未修改")');
-            await typoModal.waitFor({ state: 'visible', timeout: 3000 });
-            console.log("⚠️ 出现错别字提示，点击【提交】继续...");
-            // 点击橙色的“提交”按钮
-            await typoModal.locator('button').filter({ hasText: '提交' }).click();
-        } catch (e) {
-            console.log("✅ 无错别字提示，继续下一步...");
-        }
-
-        // 2. 内容风险检测弹窗 (必定出现)
-        // 弹窗文本: "是否进行内容风险检测？"
-        try {
-            console.log("🔍 检测是否出现【内容风险检测】弹窗...");
-            const riskModal = page.locator('.arco-modal:has-text("是否进行内容风险检测")');
-            await riskModal.waitFor({ state: 'visible', timeout: 5000 });
-            console.log("⚠️ 出现风险检测提示，点击【确定】...");
-            // 点击橙色的“确定”按钮
-            await riskModal.locator('button').filter({ hasText: '确定' }).click();
-            
-            // 等待页面顶部出现“检测暂无风险，可发布或继续修改”的绿色提示横幅
-            console.log("⏳ 等待风险检测完成...");
-            await page.waitForSelector('text=检测暂无风险', { timeout: 15000 });
-            console.log("✅ 风险检测完成且无风险！");
-            
-            // 检测完成后，需要再次点击右上角的“下一步/发布”按钮进入最终发布设置
-            console.log("👉 再次点击右上角的发布/下一步按钮...");
-            await publishBtn.click();
-        } catch (e) {
-            console.log("⚠️ 未捕获到风险检测弹窗，可能已跳过或由于其他原因未显示...");
-        }
-
-        // 3. 最终发布设置弹窗 (必定出现)
-        // 弹窗标题: "发布设置" -> 包含 "是否使用AI" 单选框
-        try {
-            console.log("🔍 等待【发布设置】最终弹窗出现...");
-            const publishSettingModal = page.locator('.arco-modal:has-text("发布设置")');
-            await publishSettingModal.waitFor({ state: 'visible', timeout: 5000 });
-            
-            console.log("👉 在发布设置中，选择【否】不使用AI...");
-            // 根据第三张截图，“是否使用AI”有两个单选框，我们需要点击“否”对应的单选框
-            // 这里使用更精确的定位，找到包含“否”文本的 radio 组件并点击
-            const noAiRadio = publishSettingModal.locator('.arco-radio:has-text("否")');
-            await noAiRadio.click();
-            
-            console.log("🚀 点击【确认发布】按钮！");
-            // 点击右下角橙色的“确认发布”按钮
-            await publishSettingModal.locator('button').filter({ hasText: '确认发布' }).click();
-
-            // ==========================================
-            // 第四步：返回列表验证发布结果
-            // ==========================================
-            console.log("⏳ 等待发布请求处理 (3秒)...");
+        if (novelName) {
+            console.log(`📖 点击小说: ${novelName}`);
+            await page.locator(`text="${novelName}"`).first().click();
             await page.waitForTimeout(3000);
-
-            console.log("👉 正在返回章节管理页面进行最终验证...");
-            await page.goto(chapterListUrl, { waitUntil: 'networkidle' });
-
-            console.log("🔍 检查最新章节状态...");
-            await page.waitForSelector('tbody tr', { timeout: 10000 });
-            
-            const firstRow = page.locator('tbody tr').first();
-            const rowText = await firstRow.innerText();
-            const oneLineText = rowText.replace(/\s+/g, ' ');
-
-            const hasStatus = oneLineText.includes('待审核') || oneLineText.includes('审核中') || oneLineText.includes('已发布');
-            
-            // 为了应对番茄后台可能的标题截断（如"第76章 因果的..."），我们取标题的前10个字符进行模糊匹配验证
-            const titleToMatch = chapterTitle ? chapterTitle.substring(0, 10) : '';
-            const hasCorrectTitle = titleToMatch ? oneLineText.includes(titleToMatch) : true;
-
-            if (hasStatus) {
-                console.log(`✅ 最终验证通过！最新章节状态正常。`);
-                console.log(`📄 抓取到的最新章节信息: [ ${oneLineText} ]`);
-                if (titleToMatch && !hasCorrectTitle) {
-                    console.log(`⚠️ 提示：最新章节列表中似乎没有匹配到刚刚发布的标题前缀 "${titleToMatch}"，请手动确认。`);
-                }
-                console.log("🎉 真正的发布成功！流程彻底执行完毕！");
-            } else {
-                console.log(`⚠️ 警告：最新章节的状态未显示为"待审核"或"审核中"。请手动确认！`);
-                console.log(`📄 当前列表第一行内容: [ ${oneLineText} ]`);
-            }
-
-        } catch (e) {
-            console.error("❌ 最终发布设置弹窗处理或验证失败:", e);
         }
 
-    } catch (error) {
-        console.error("❌ 发生错误:", error);
-    } finally {
-        console.log("🛑 脚本执行完毕。浏览器将在 10 秒后关闭...");
-        await page.waitForTimeout(10000); // 停留10秒以便观察
-        await context.close();
+        console.log("📖 点击章节管理...");
+        await page.locator('text=章节管理').first().click({ force: true });
+        await page.waitForTimeout(3000);
+
+        if (volumeName) {
+            console.log(`📚 检查并选择分卷: ${volumeName}`);
+            const volumeSelect = page.locator('.arco-select').first();
+            if (await volumeSelect.isVisible()) {
+                await volumeSelect.click();
+                await page.waitForTimeout(1000);
+                
+                const volumeOption = page.locator('.arco-select-option').filter({ hasText: volumeName }).first();
+                if (await volumeOption.isVisible()) {
+                    console.log(`✅ 找到分卷: ${volumeName}，直接选择`);
+                    await volumeOption.click();
+                    await page.waitForTimeout(2000);
+                } else {
+                    console.log(`⚠️ 未找到分卷: ${volumeName}，准备新建分卷...`);
+                    // Close the dropdown
+                    await page.mouse.click(0, 0);
+                    await page.waitForTimeout(500);
+                    
+                    console.log("👉 点击“编辑分卷”按钮...");
+                    await page.locator('button').filter({ hasText: '编辑分卷' }).first().click();
+                    
+                    const modal = page.locator('.arco-modal').first();
+                    await modal.waitFor({ state: 'visible', timeout: 10000 });
+                    
+                    console.log("👉 在分卷弹窗中点击“+ 新建分卷”...");
+                    await modal.getByText('新建分卷').first().click();
+                    
+                    console.log(`👉 输入新分卷名称: ${volumeName}`);
+                    await modal.locator('input[value=""]').first().fill(volumeName);
+                    
+                    console.log("👉 点击弹窗“确定”按钮保存...");
+                    await modal.locator('button').filter({ hasText: '确定' }).first().click();
+                    await page.waitForTimeout(2000);
+                    
+                    // Re-open and select
+                    await volumeSelect.click();
+                    await page.waitForTimeout(1000);
+                    await page.locator('.arco-select-option').filter({ hasText: volumeName }).first().click();
+                    await page.waitForTimeout(2000);
+                }
+            }
+        }
+
+        console.log("👉 点击新建章节...");
+        await page.locator('text=新建章节').first().click({ force: true });
+        
+        console.log("⏳ 等待页面跳转并查找编辑器...");
+        await page.waitForTimeout(5000);
+
+        let targetPage = page;
+        for (let attempt = 0; attempt < 10; attempt++) {
+            for (const p of context.pages()) {
+                if (p.url().includes('publish') || p.url().includes('chapter')) {
+                    targetPage = p;
+                    console.log("✅ 找到编辑器页面！ URL: " + p.url());
+                    break;
+                }
+            }
+            if (targetPage !== page) break;
+            await page.waitForTimeout(1000);
+        }
+
+        await targetPage.bringToFront();
+        await targetPage.waitForLoadState('networkidle');
+        await targetPage.waitForTimeout(2000);
+
+        console.log(`📝 填写标题: ${chapterTitle}`);
+        try {
+            const titleLocator = targetPage.getByPlaceholder('请输入标题').first();
+            await titleLocator.waitFor({ state: 'visible', timeout: 5000 });
+            await titleLocator.click();
+            await titleLocator.press('Meta+a');
+            await titleLocator.press('Backspace');
+            await titleLocator.fill(chapterTitle);
+            await titleLocator.blur();
+        } catch (e) {
+            console.log("⚠️ 常规选择器超时，尝试使用注入原生键盘事件...");
+            await targetPage.evaluate((t) => {
+                const el = document.querySelector('input[placeholder*="请输入标题"], .editor-title-input, .title-input');
+                if (el) {
+                    el.value = t;
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                    el.blur();
+                } else {
+                    console.error("❌ 无法在 DOM 中找到任何标题输入框");
+                }
+            }, chapterTitle);
+        }
+        await targetPage.waitForTimeout(1000);
+
+        console.log("📝 填写正文...");
+        const rawText = fs.readFileSync(contentFile, 'utf8');
+        
+        // Format text: filter out empty lines, and ignore the first few lines if they are chapter titles
+        const paragraphs = rawText.split('\n')
+            .map(p => p.trim())
+            .filter(p => p !== '')
+            .filter(p => !p.startsWith('### 第') && !p.startsWith('第') || !p.includes('章'));
+            
+        const htmlContent = paragraphs.map(p => `<p>${p}</p>`).join('');
+
+        try {
+            console.log("👉 尝试直接注入 HTML 到编辑器...");
+            await targetPage.evaluate((html) => {
+                // Find the ProseMirror contenteditable element
+                const el = document.querySelector('.ProseMirror, .ql-editor, [contenteditable="true"]:not(h1)');
+                if (el) {
+                    el.innerHTML = html;
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                    el.blur();
+                } else {
+                    console.error("❌ 找不到正文编辑器区域！");
+                    throw new Error("Editor not found");
+                }
+            }, htmlContent);
+        } catch(e) {
+            console.error("❌ 注入正文失败:", e);
+        }
+
+        await targetPage.waitForTimeout(2000);
+        
+        console.log("🚀 寻找保存/发布按钮...");
+        await targetPage.evaluate(() => {
+            const btns = Array.from(document.querySelectorAll('button'));
+            const saveBtn = btns.find(b => b.innerText.includes('存草稿') || b.innerText.includes('发布') || b.innerText.includes('下一步'));
+            if (saveBtn) saveBtn.click();
+        });
+
+        for (let i = 0; i < 4; i++) {
+            await targetPage.waitForTimeout(2000);
+            await targetPage.evaluate(() => {
+                const btns = Array.from(document.querySelectorAll('button'));
+                const okBtn = btns.find(b => ['确定', '确认发布', '提交'].includes(b.innerText.trim()));
+                if (okBtn) okBtn.click();
+                const noAi = Array.from(document.querySelectorAll('.arco-radio')).find(r => r.innerText.includes('否'));
+                if (noAi) noAi.click();
+            });
+        }
+
+        console.log("✅ 脚本执行完毕。");
+        await targetPage.waitForTimeout(3000);
+
+    } catch (e) { 
+        console.error("❌ 发生错误:", e); 
+    } finally { 
+        console.log("浏览器暂不关闭，保留复用上下文！如果不需要请手动关闭浏览器。");
     }
 })();

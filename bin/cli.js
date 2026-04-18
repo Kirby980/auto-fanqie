@@ -12,11 +12,16 @@ if (args.length === 0) {
 }
 
 if (args[0] === 'install' && args[1] === '--skills') {
-    // Install Claude Code skill
+    // Install Claude Code & OpenClaw skill
     const userProjectDir = process.cwd();
-    const targetDir = path.join(userProjectDir, '.claude', 'skills', 'fanqie-publisher');
     
-    fs.mkdirSync(targetDir, { recursive: true });
+    // For Claude Code
+    const claudeTargetDir = path.join(userProjectDir, '.claude', 'skills', 'fanqie-publisher');
+    fs.mkdirSync(claudeTargetDir, { recursive: true });
+
+    // For OpenClaw
+    const openclawTargetDir = path.join(userProjectDir, 'skills', 'fanqie-publisher');
+    fs.mkdirSync(openclawTargetDir, { recursive: true });
 
     // Locate the SKILL.md in the package installation directory
     const sourceSkillPath = path.join(__dirname, '../.claude/skills/fanqie-publisher/SKILL.md');
@@ -26,10 +31,15 @@ if (args[0] === 'install' && args[1] === '--skills') {
         process.exit(1);
     }
 
-    const targetSkillPath = path.join(targetDir, 'SKILL.md');
-    fs.copyFileSync(sourceSkillPath, targetSkillPath);
-    console.log(`✅ [fanqie-publisher] Skill successfully installed at ${targetSkillPath}`);
-    console.log(`💡 You can now ask Claude Code or Copilot to use the 'fanqie-publisher' skill!`);
+    const claudeTargetSkillPath = path.join(claudeTargetDir, 'SKILL.md');
+    fs.copyFileSync(sourceSkillPath, claudeTargetSkillPath);
+    
+    const openclawTargetSkillPath = path.join(openclawTargetDir, 'SKILL.md');
+    fs.copyFileSync(sourceSkillPath, openclawTargetSkillPath);
+
+    console.log(`✅ [fanqie-publisher] Skill successfully installed for Claude Code at ${claudeTargetSkillPath}`);
+    console.log(`✅ [fanqie-publisher] Skill successfully installed for OpenClaw at ${openclawTargetSkillPath}`);
+    console.log(`💡 You can now ask Claude Code, OpenClaw, or Copilot to use the 'fanqie-publisher' skill!`);
     process.exit(0);
 }
 
@@ -80,7 +90,7 @@ function showHelp() {
 ========================================
 
 Usage:
-  fanqie-publisher install --skills      Install Claude Code skill to your current project (.claude/skills)
+  fanqie-publisher install --skills      Install Claude Code & OpenClaw skill to your current project (.claude/skills & skills)
   fanqie-publisher validate [options]    Validate chapter content length (minimum Chinese chars)
   fanqie-publisher publish [options]     Run the full automated publishing script
 
