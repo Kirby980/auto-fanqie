@@ -103,7 +103,7 @@ if (!chapterTitle || !contentFile) {
         let targetPage = page;
         for (let attempt = 0; attempt < 10; attempt++) {
             for (const p of context.pages()) {
-                if (p.url().includes('publish') || p.url().includes('chapter')) {
+                if (p.url().includes('/publish/')) {
                     targetPage = p;
                     console.log("✅ 找到编辑器页面！ URL: " + p.url());
                     break;
@@ -119,19 +119,43 @@ if (!chapterTitle || !contentFile) {
 
         console.log(`📝 填写标题: ${chapterTitle}`);
         try {
+            let chapNum = "";
+            let actualTitle = chapterTitle;
+            const match = chapterTitle.match(/第(\d+)章\s*(.*)/);
+            if (match) {
+                chapNum = match[1];
+                actualTitle = match[2];
+            }
+
+            if (chapNum) {
+                const chapInput = targetPage.locator('input[type="text"]').first();
+                try {
+                    await chapInput.waitFor({ state: 'visible', timeout: 2000 });
+                    await chapInput.click();
+                    await chapInput.press('Meta+a');
+                    await chapInput.press('Backspace');
+                    await chapInput.fill(chapNum);
+                    await chapInput.blur();
+                } catch (e) {
+                    console.log("⚠️ 章节序号框填入失败，可能已自动填充");
+                }
+            }
+
             const titleLocator = targetPage.getByPlaceholder('请输入标题').first();
             await titleLocator.waitFor({ state: 'visible', timeout: 5000 });
             await titleLocator.click();
             await titleLocator.press('Meta+a');
             await titleLocator.press('Backspace');
-            await titleLocator.fill(chapterTitle);
+            await titleLocator.fill(actualTitle);
             await titleLocator.blur();
         } catch (e) {
             console.log("⚠️ 常规选择器超时，尝试使用注入原生键盘事件...");
             await targetPage.evaluate((t) => {
+                const match = t.match(/第(\d+)章\s*(.*)/);
+                const actualTitle = match ? match[2] : t;
                 const el = document.querySelector('input[placeholder*="请输入标题"], .editor-title-input, .title-input');
                 if (el) {
-                    el.value = t;
+                    el.value = actualTitle;
                     el.dispatchEvent(new Event('input', { bubbles: true }));
                     el.dispatchEvent(new Event('change', { bubbles: true }));
                     el.blur();
@@ -145,11 +169,23 @@ if (!chapterTitle || !contentFile) {
         console.log("📝 填写正文...");
         const rawText = fs.readFileSync(contentFile, 'utf8');
         
-        // Format text: filter out empty lines, and ignore the first few lines if they are chapter titles
-        const paragraphs = rawText.split('\n')
+        // Format text: filter out empty lines
+        let paragraphs = rawText.split('\n')
             .map(p => p.trim())
-            .filter(p => p !== '')
-            .filter(p => !p.startsWith('### 第') && !p.startsWith('第') || !p.includes('章'));
+            .filter(p => p !== '');
+            
+        // Ignore the first few lines if they are chapter titles
+        while (paragraphs.length > 0 && (/^#*\s*第\d+章/.test(paragraphs[0]) || (paragraphs[0].startsWith('第') && paragraphs[0].includes('章')))) {
+            paragraphs.shift();
+        }
+        
+        // Remove the last line if it ends with "完" or contains word counts like "本章字数"
+        while (paragraphs.length > 0 && (
+            (paragraphs[paragraphs.length - 1].includes('完') && paragraphs[paragraphs.length - 1].includes('章')) ||
+            paragraphs[paragraphs.length - 1].includes('本章字数')
+        )) {
+            paragraphs.pop();
+        }
             
         const htmlContent = paragraphs.map(p => `<p>${p}</p>`).join('');
 
@@ -175,20 +211,40 @@ if (!chapterTitle || !contentFile) {
         await targetPage.waitForTimeout(2000);
         
         console.log("🚀 寻找保存/发布按钮...");
+        // Click 下一步 (Next) or 发布 (Publish)
         await targetPage.evaluate(() => {
             const btns = Array.from(document.querySelectorAll('button'));
-            const saveBtn = btns.find(b => b.innerText.includes('存草稿') || b.innerText.includes('发布') || b.innerText.includes('下一步'));
-            if (saveBtn) saveBtn.click();
+            const nextBtn = btns.find(b => b.innerText.includes('下一步') || b.innerText.trim() === '发布');
+            if (nextBtn) nextBtn.click();
         });
 
-        for (let i = 0; i < 4; i++) {
+        // Wait and handle modals
+        for (let i = 0; i < 8; i++) { 
             await targetPage.waitForTimeout(2000);
             await targetPage.evaluate(() => {
                 const btns = Array.from(document.querySelectorAll('button'));
-                const okBtn = btns.find(b => ['确定', '确认发布', '提交'].includes(b.innerText.trim()));
-                if (okBtn) okBtn.click();
-                const noAi = Array.from(document.querySelectorAll('.arco-radio')).find(r => r.innerText.includes('否'));
-                if (noAi) noAi.click();
+                const dialogText = document.body.innerText;
+                
+                // Skip risk detection
+                if (dialogText.includes('是否进行内容风险检测')) {
+                    const cancelBtn = btns.find(b => b.innerText.trim() === '取消');
+                    if (cancelBtn) cancelBtn.click();
+                }
+
+                // If "确认发布" exists, select "否" for AI first
+                const confirmPublishBtn = btns.find(b => b.innerText.trim() === '确认发布' || b.innerText.trim() === '提交');
+                if (confirmPublishBtn) {
+                    const noAi = Array.from(document.querySelectorAll('.arco-radio')).find(r => r.innerText.includes('否'));
+                    if (noAi) noAi.click();
+                    // Click after a tiny delay
+                    setTimeout(() => confirmPublishBtn.click(), 500);
+                }
+                
+                // If there's a typo warning
+                if (dialogText.includes('检测到你还有错别字未修改')) {
+                    const submitBtn = btns.find(b => b.innerText.trim() === '提交');
+                    if (submitBtn) submitBtn.click();
+                }
             });
         }
 

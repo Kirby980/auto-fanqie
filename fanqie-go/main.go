@@ -208,15 +208,31 @@ func main() {
 			
 			// Format text into paragraphs, skipping title lines
 			lines := strings.Split(string(contentBytes), "\n")
-			var htmlBuilder strings.Builder
+			var paragraphs []string
 			for _, line := range lines {
 				p := strings.TrimSpace(line)
-				if p == "" {
-					continue
+				if p != "" {
+					paragraphs = append(paragraphs, p)
 				}
-				if strings.HasPrefix(p, "### 第") || (strings.HasPrefix(p, "第") && strings.Contains(p, "章")) {
-					continue
+			}
+
+			// 忽略开头的标题行
+			for len(paragraphs) > 0 && (strings.HasPrefix(paragraphs[0], "### 第") || strings.HasPrefix(paragraphs[0], "## 第") || strings.HasPrefix(paragraphs[0], "# 第") || (strings.HasPrefix(paragraphs[0], "第") && strings.Contains(paragraphs[0], "章"))) {
+				paragraphs = paragraphs[1:]
+			}
+
+			// 忽略结尾的字数统计或“完”
+			for len(paragraphs) > 0 {
+				last := paragraphs[len(paragraphs)-1]
+				if (strings.Contains(last, "完") && strings.Contains(last, "章")) || strings.Contains(last, "本章字数") {
+					paragraphs = paragraphs[:len(paragraphs)-1]
+				} else {
+					break
 				}
+			}
+
+			var htmlBuilder strings.Builder
+			for _, p := range paragraphs {
 				htmlBuilder.WriteString("<p>")
 				htmlBuilder.WriteString(p)
 				htmlBuilder.WriteString("</p>")
