@@ -66,6 +66,44 @@ if (args[0] === 'publish') {
         }
     }
 
+    // ── 硬性规范化：workspace 里只能有一个 chapter.txt ──
+    // 1. 如果 --file 指到了 chapter_N.txt / chapter83.txt 这种临时文件，
+    //    复制内容到 chapter.txt，然后把 --file 改成 chapter.txt
+    // 2. 删掉 workspace 里所有 chapter*.txt（除了 chapter.txt 本身）
+    // 完全本地 shell 操作，零 LLM token。
+    try {
+        const workspace = '/Users/hyz/.openclaw/workspace';
+        const canonical = path.join(workspace, 'chapter.txt');
+
+        // Find --file arg index
+        const fileIdx = publishArgs.findIndex(a => a === '--file');
+        if (fileIdx >= 0 && fileIdx + 1 < publishArgs.length) {
+            const given = publishArgs[fileIdx + 1];
+            const resolved = path.resolve(given);
+            if (resolved !== canonical && fs.existsSync(resolved)) {
+                // Copy content to canonical chapter.txt (overwrite)
+                fs.copyFileSync(resolved, canonical);
+                console.log(`🧹 [normalize] --file ${given} → 已复制到 ${canonical}`);
+                publishArgs[fileIdx + 1] = canonical;
+            }
+        }
+
+        // Sweep stray chapter_*.txt / chapter<digits>.txt
+        if (fs.existsSync(workspace)) {
+            const strayRe = /^chapter[^.]*\.txt$/i; // matches chapter.txt / chapter_82.txt / chapter83.txt / chapter83_temp.txt
+            for (const f of fs.readdirSync(workspace)) {
+                if (strayRe.test(f) && f !== 'chapter.txt') {
+                    try {
+                        fs.unlinkSync(path.join(workspace, f));
+                        console.log(`🧹 [cleanup] 删除临时文件 ${f}`);
+                    } catch (e) { /* ignore */ }
+                }
+            }
+        }
+    } catch (e) {
+        console.warn(`⚠️  [normalize] 规范化步骤失败（非致命）: ${e.message}`);
+    }
+
     if (engine === 'go') {
         // Run the Go script
         const goScript = path.join(__dirname, '../fanqie-go/main.go');

@@ -118,14 +118,31 @@ if (!chapterTitle || !contentFile) {
         await targetPage.waitForTimeout(2000);
 
         console.log(`📝 填写标题: ${chapterTitle}`);
-        try {
-            let chapNum = "";
-            let actualTitle = chapterTitle;
-            const match = chapterTitle.match(/第(\d+)章\s*(.*)/);
-            if (match) {
-                chapNum = match[1];
-                actualTitle = match[2];
+        // Parse "第{num}章 {title}" — num 可以是阿拉伯数字 (82) 或中文数字 (八十二 / 一百零五)
+        // 返回 { chapNum: "82", actualTitle: "针影之下..." }
+        const parseChapterTitle = (raw) => {
+            const m = raw.match(/^\s*第\s*([\d一二三四五六七八九十百千零两]+)\s*章\s*[:：、\.\s]*(.*?)\s*$/);
+            if (!m) return { chapNum: "", actualTitle: raw };
+            const numStr = m[1];
+            if (/^\d+$/.test(numStr)) return { chapNum: numStr, actualTitle: m[2] };
+            const digitMap = { '零':0,'一':1,'二':2,'两':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9 };
+            const unitMap = { '十':10,'百':100,'千':1000 };
+            let total = 0, section = 0, current = 0;
+            for (const ch of numStr) {
+                if (digitMap[ch] !== undefined) { current = digitMap[ch]; }
+                else if (unitMap[ch]) {
+                    if (current === 0) current = 1;
+                    section += current * unitMap[ch];
+                    current = 0;
+                }
             }
+            total = section + current;
+            return { chapNum: String(total), actualTitle: m[2] };
+        };
+
+        try {
+            const { chapNum, actualTitle } = parseChapterTitle(chapterTitle);
+            console.log(`   -> 解析结果: 第${chapNum || '?'}章 | 标题="${actualTitle}"`);
 
             if (chapNum) {
                 const chapInput = targetPage.locator('input[type="text"]').first();
@@ -150,19 +167,18 @@ if (!chapterTitle || !contentFile) {
             await titleLocator.blur();
         } catch (e) {
             console.log("⚠️ 常规选择器超时，尝试使用注入原生键盘事件...");
+            const { actualTitle: fallbackTitle } = parseChapterTitle(chapterTitle);
             await targetPage.evaluate((t) => {
-                const match = t.match(/第(\d+)章\s*(.*)/);
-                const actualTitle = match ? match[2] : t;
                 const el = document.querySelector('input[placeholder*="请输入标题"], .editor-title-input, .title-input');
                 if (el) {
-                    el.value = actualTitle;
+                    el.value = t;
                     el.dispatchEvent(new Event('input', { bubbles: true }));
                     el.dispatchEvent(new Event('change', { bubbles: true }));
                     el.blur();
                 } else {
                     console.error("❌ 无法在 DOM 中找到任何标题输入框");
                 }
-            }, chapterTitle);
+            }, fallbackTitle);
         }
         await targetPage.waitForTimeout(1000);
 
@@ -254,6 +270,6 @@ if (!chapterTitle || !contentFile) {
     } catch (e) { 
         console.error("❌ 发生错误:", e); 
     } finally { 
-        console.log("浏览器暂不关闭，保留复用上下文！如果不需要请手动关闭浏览器。");
+        console.log("浏览器暂不关闭"); process.exit(0);
     }
 })();
