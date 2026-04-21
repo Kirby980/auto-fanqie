@@ -183,26 +183,12 @@ if (!chapterTitle || !contentFile) {
         await targetPage.waitForTimeout(1000);
 
         console.log("📝 填写正文...");
+        // Staged content is already filtered by `fanqie-publisher prepare`.
+        // Here we only split into paragraphs and wrap in <p> for injection.
         const rawText = fs.readFileSync(contentFile, 'utf8');
-        
-        // Format text: filter out empty lines
-        let paragraphs = rawText.split('\n')
+        const paragraphs = rawText.split('\n')
             .map(p => p.trim())
             .filter(p => p !== '');
-            
-        // Ignore the first few lines if they are chapter titles
-        while (paragraphs.length > 0 && (/^#*\s*第\d+章/.test(paragraphs[0]) || (paragraphs[0].startsWith('第') && paragraphs[0].includes('章')))) {
-            paragraphs.shift();
-        }
-        
-        // Remove the last line if it ends with "完" or contains word counts like "本章字数"
-        while (paragraphs.length > 0 && (
-            (paragraphs[paragraphs.length - 1].includes('完') && paragraphs[paragraphs.length - 1].includes('章')) ||
-            paragraphs[paragraphs.length - 1].includes('本章字数')
-        )) {
-            paragraphs.pop();
-        }
-            
         const htmlContent = paragraphs.map(p => `<p>${p}</p>`).join('');
 
         try {

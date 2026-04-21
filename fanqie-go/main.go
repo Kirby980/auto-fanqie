@@ -205,29 +205,15 @@ func main() {
 		contentBytes, err := os.ReadFile(contentFile)
 		if err == nil {
 			fmt.Printf("👉 从文件读取并填写正文: %s\n", contentFile)
-			
-			// Format text into paragraphs, skipping title lines
+
+			// Staged content is already filtered by `fanqie-publisher prepare`.
+			// Here we only split into paragraphs and wrap in <p> for injection.
 			lines := strings.Split(string(contentBytes), "\n")
 			var paragraphs []string
 			for _, line := range lines {
 				p := strings.TrimSpace(line)
 				if p != "" {
 					paragraphs = append(paragraphs, p)
-				}
-			}
-
-			// 忽略开头的标题行
-			for len(paragraphs) > 0 && (strings.HasPrefix(paragraphs[0], "### 第") || strings.HasPrefix(paragraphs[0], "## 第") || strings.HasPrefix(paragraphs[0], "# 第") || (strings.HasPrefix(paragraphs[0], "第") && strings.Contains(paragraphs[0], "章"))) {
-				paragraphs = paragraphs[1:]
-			}
-
-			// 忽略结尾的字数统计或“完”
-			for len(paragraphs) > 0 {
-				last := paragraphs[len(paragraphs)-1]
-				if (strings.Contains(last, "完") && strings.Contains(last, "章")) || strings.Contains(last, "本章字数") {
-					paragraphs = paragraphs[:len(paragraphs)-1]
-				} else {
-					break
 				}
 			}
 
