@@ -13,6 +13,20 @@ import (
 )
 
 func main() {
+	// ── Self-defense: must be invoked via `fanqie-publisher publish --engine go`.
+	// CLI sets FANQIE_CLI_INVOKED=1 before spawning us. A direct `go run main.go`
+	// from a workspace copy is a known bypass pattern that skips the staged gate
+	// and the 3000-han validate.
+	if os.Getenv("FANQIE_CLI_INVOKED") != "1" {
+		fmt.Fprintln(os.Stderr, "❌ [guard] main.go 不是用户入口，必须通过 fanqie-publisher CLI 调用。")
+		fmt.Fprintln(os.Stderr, "   正确做法:")
+		fmt.Fprintln(os.Stderr, "     1) fanqie-publisher prepare --content-file /Users/hyz/.openclaw/workspace/chapter.txt")
+		fmt.Fprintln(os.Stderr, "     2) 把 prepare stdout 原样贴给老板确认")
+		fmt.Fprintln(os.Stderr, "     3) fanqie-publisher publish --engine go --novel \"...\" --title \"...\"")
+		fmt.Fprintln(os.Stderr, "   禁止把本程序复制到 workspace 后直接 go run 执行（会绕过字数校验 + 闸门）。")
+		os.Exit(10)
+	}
+
 	var novelName, targetVolumeName, chapterTitle, contentFile string
 
 	flag.StringVar(&novelName, "novel", "重生1982：我有一片禁忌海", "Name of the novel")
@@ -104,10 +118,11 @@ func main() {
 		log.Fatalf("❌ 章节管理页面加载超时: %v", err)
 	}
 
-	fmt.Printf("🔍 检查当前分卷是否为: %s\n", targetVolumeName)
+	fmt.Printf("[volume] looking for %q\n", targetVolumeName)
 	volumeDropdown := page.Locator(".arco-select").First()
 	if err := volumeDropdown.Click(); err != nil {
-		log.Fatalf("❌ 点击分卷下拉框失败: %v", err)
+		fmt.Fprintf(os.Stderr, "❌ [volume] VOLUME_CREATE_FAILED: click dropdown: %v\n", err)
+		os.Exit(4)
 	}
 	time.Sleep(1 * time.Second)
 
@@ -115,55 +130,83 @@ func main() {
 	volumeExists, _ := volumeOption.IsVisible()
 
 	if volumeExists {
-		fmt.Printf("✅ 找到分卷: %s，直接选择\n", targetVolumeName)
+		fmt.Printf("[volume] found existing volume, selecting\n")
 		if err := volumeOption.Click(); err != nil {
-			log.Fatalf("❌ 选择分卷失败: %v", err)
+			fmt.Fprintf(os.Stderr, "❌ [volume] VOLUME_CREATE_FAILED: select existing: %v\n", err)
+			os.Exit(4)
 		}
 	} else {
-		fmt.Printf("⚠️ 未找到分卷: %s，准备新建分卷...\n", targetVolumeName)
+		fmt.Printf("[volume] %q not found; creating...\n", targetVolumeName)
 		// 关闭下拉框
 		page.Mouse().Click(0, 0)
 		time.Sleep(500 * time.Millisecond)
 
-		fmt.Println("👉 点击“编辑分卷”按钮...")
+		fmt.Println("[volume] clicking 编辑分卷 button")
 		if err := page.Locator("button").Filter(playwright.LocatorFilterOptions{HasText: "编辑分卷"}).Click(); err != nil {
-			log.Fatalf("❌ 点击编辑分卷失败: %v", err)
+			fmt.Fprintf(os.Stderr, "❌ [volume] VOLUME_CREATE_FAILED: click 编辑分卷: %v\n", err)
+			os.Exit(4)
 		}
 
 		_, err = page.WaitForSelector(`div.arco-modal:has-text("分卷")`, playwright.PageWaitForSelectorOptions{
 			Timeout: playwright.Float(10000),
 		})
 		if err != nil {
-			log.Fatalf("❌ 等待分卷弹窗超时: %v", err)
+			fmt.Fprintf(os.Stderr, "❌ [volume] VOLUME_CREATE_FAILED: modal not visible: %v\n", err)
+			os.Exit(4)
 		}
 
-		fmt.Println("👉 在分卷弹窗中点击“+ 新建分卷”...")
+		fmt.Println("[volume] clicking 新建分卷 inside modal")
 		if err := page.Locator(".arco-modal").GetByText("新建分卷").Click(); err != nil {
-			log.Fatalf("❌ 点击新建分卷失败: %v", err)
+			fmt.Fprintf(os.Stderr, "❌ [volume] VOLUME_CREATE_FAILED: click 新建分卷: %v\n", err)
+			os.Exit(4)
 		}
+		time.Sleep(500 * time.Millisecond)
 
-		fmt.Printf("👉 输入新分卷名称: %s\n", targetVolumeName)
-		newVolumeInput := page.Locator(`.arco-modal input[value=""]`).First()
+		fmt.Printf("[volume] filling new volume name: %s\n", targetVolumeName)
+		// Prefer a more robust selector: the newly added input has empty value.
+		newVolumeInput := page.Locator(`.arco-modal input[value=""], .arco-modal input[placeholder="请输入分卷名字"]`).First()
 		if err := newVolumeInput.Fill(targetVolumeName); err != nil {
-			log.Fatalf("❌ 填写新分卷名称失败: %v", err)
+			fmt.Fprintf(os.Stderr, "❌ [volume] VOLUME_CREATE_FAILED: fill name: %v\n", err)
+			os.Exit(4)
 		}
+		
+		fmt.Println("[volume] clicking checkmark to confirm new volume name")
+		checkmark := page.Locator(`.arco-modal svg.arco-icon-check, .arco-modal .arco-icon-check`).First()
+		if visible, _ := checkmark.IsVisible(); visible {
+			if err := checkmark.Click(); err != nil {
+				fmt.Fprintf(os.Stderr, "⚠️ [volume] Failed to click checkmark, fallback to Enter: %v\n", err)
+				newVolumeInput.Press("Enter")
+			}
+		} else {
+			newVolumeInput.Press("Enter")
+		}
+		time.Sleep(500 * time.Millisecond)
 
-		fmt.Println("👉 点击弹窗“确定”按钮保存...")
+		fmt.Println("[volume] clicking 确定 to save")
 		if err := page.Locator(".arco-modal button").Filter(playwright.LocatorFilterOptions{HasText: "确定"}).Click(); err != nil {
-			log.Fatalf("❌ 保存分卷失败: %v", err)
+			fmt.Fprintf(os.Stderr, "❌ [volume] VOLUME_CREATE_FAILED: save: %v\n", err)
+			os.Exit(4)
 		}
 
 		time.Sleep(2 * time.Second)
 
-		// 再次打开选择
+		// 再次打开选择并验证新卷存在
 		if err := volumeDropdown.Click(); err != nil {
-			log.Fatalf("❌ 再次点击分卷下拉框失败: %v", err)
+			fmt.Fprintf(os.Stderr, "❌ [volume] VOLUME_CREATE_FAILED: reopen dropdown: %v\n", err)
+			os.Exit(4)
 		}
 		time.Sleep(1 * time.Second)
-		if err := page.Locator(".arco-select-option").Filter(playwright.LocatorFilterOptions{HasText: targetVolumeName}).Click(); err != nil {
-			log.Fatalf("❌ 再次选择分卷失败: %v", err)
+		newOption := page.Locator(".arco-select-option").Filter(playwright.LocatorFilterOptions{HasText: targetVolumeName})
+		newVisible, _ := newOption.IsVisible()
+		if !newVisible {
+			fmt.Fprintf(os.Stderr, "❌ [volume] VOLUME_CREATE_FAILED: %q still not in dropdown after create\n", targetVolumeName)
+			os.Exit(4)
 		}
-		fmt.Printf("✅ 成功选择新建的分卷: %s\n", targetVolumeName)
+		if err := newOption.Click(); err != nil {
+			fmt.Fprintf(os.Stderr, "❌ [volume] VOLUME_CREATE_FAILED: select new: %v\n", err)
+			os.Exit(4)
+		}
+		fmt.Printf("[volume] created and selected new volume: %s\n", targetVolumeName)
 	}
 
 	chapterListUrl := page.URL()
@@ -264,13 +307,24 @@ func main() {
 
 	// 2. 内容风险检测弹窗
 	fmt.Println("🔍 检测是否出现【内容风险检测】弹窗...")
-	riskModal := page.Locator(`.arco-modal:has-text("是否进行内容风险检测")`)
+	riskModal := page.Locator(`.arco-modal:has-text("风险检测")`)
 	err = riskModal.WaitFor(playwright.LocatorWaitForOptions{
 		State:   playwright.WaitForSelectorStateVisible,
 		Timeout: playwright.Float(5000),
 	})
 	if err == nil {
-		fmt.Println("⚠️ 出现风险检测提示，点击【确定】...")
+		fmt.Println("⚠️ 出现风险检测提示...")
+		
+		// 检查是否有“基础检测”和“全面检测”的选择
+		basicOption := riskModal.Locator(`.arco-radio:has-text("基础检测"), text=基础检测`)
+		count, _ := basicOption.Count()
+		if count > 0 {
+			fmt.Println("👉 发现【基础检测】选项，正在选择...")
+			basicOption.First().Click()
+			time.Sleep(500 * time.Millisecond)
+		}
+
+		fmt.Println("👉 点击【确定】...")
 		riskModal.Locator("button").Filter(playwright.LocatorFilterOptions{HasText: "确定"}).Click()
 
 		fmt.Println("⏳ 等待风险检测完成...")

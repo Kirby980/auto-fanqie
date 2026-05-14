@@ -92,6 +92,36 @@ check(
 );
 
 check(
+  'strips （本章完） full-width (ch141/142 incident 2026-05-10)',
+  filterChapterText('正文段落。\n\n（本章完）'),
+  '正文段落。'
+);
+
+check(
+  'strips (本章完) half-width',
+  filterChapterText('正文段落。\n\n(本章完)'),
+  '正文段落。'
+);
+
+check(
+  'strips bare 本章完 (no parens)',
+  filterChapterText('正文段落。\n\n本章完'),
+  '正文段落。'
+);
+
+check(
+  'strips （本章终）variant',
+  filterChapterText('正文段落。\n\n（本章终）'),
+  '正文段落。'
+);
+
+check(
+  'does NOT strip "本章完成" mid-sentence',
+  filterChapterText('他在本章完成了任务。'),
+  '他在本章完成了任务。'
+);
+
+check(
   'strips multiple trailing markers at once',
   filterChapterText('正文段落。\n\n本章字数：3000\n\n第89章完'),
   '正文段落。'

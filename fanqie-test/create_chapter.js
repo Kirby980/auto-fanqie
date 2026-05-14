@@ -37,8 +37,8 @@ if (!chapterTitle || !contentFile) {
 
     try {
         console.log("🌐 导航到管理页面...");
-        await page.goto("https://fanqienovel.com/main/writer/book-manage");
-        await page.waitForLoadState('networkidle');
+        await page.goto("https://fanqienovel.com/main/writer/book-manage", { waitUntil: 'domcontentloaded' });
+        // await page.waitForLoadState('networkidle');
         await page.waitForTimeout(3000);
         
         if (novelName) {
@@ -221,33 +221,135 @@ if (!chapterTitle || !contentFile) {
         });
 
         // Wait and handle modals
-        for (let i = 0; i < 8; i++) { 
-            await targetPage.waitForTimeout(2000);
-            await targetPage.evaluate(() => {
-                const btns = Array.from(document.querySelectorAll('button'));
-                const dialogText = document.body.innerText;
-                
-                // Skip risk detection
-                if (dialogText.includes('是否进行内容风险检测')) {
-                    const cancelBtn = btns.find(b => b.innerText.trim() === '取消');
-                    if (cancelBtn) cancelBtn.click();
+        for (let i = 0; i < 20; i++) {
+            await targetPage.waitForTimeout(1500);
+            
+            // Handle Typo warning
+            const typoBtn = await targetPage.locator('.arco-modal:has-text("错别字") button:has-text("提交")').first();
+            if (await typoBtn.isVisible().catch(()=>false)) {
+                console.log("👉 发现错别字提示，点击提交跳过...");
+                await typoBtn.click();
+                await targetPage.waitForTimeout(1000);
+            }
+            
+            // Handle Risk detection warning
+            // 新版（2026-05 实测）：<dialog role="dialog">「请选择内容检测方式」内含两个按钮
+            //   —— "仅基础检测" / "全面检测"，点击「仅基础检测」即关闭并自动推进到"发布设置"。
+            //   没有"等检测结果"中间态。
+            // 旧版：.arco-modal 含"风险检测"文案 + radio "基础检测/全面检测" + 单独"确定"按钮。
+            // 兼容两种容器：.arco-modal 与 [role="dialog"]；触发文案：风险检测/内容检测/基础检测/全面检测。
+            const riskModal = targetPage.locator(
+                [
+                    '.arco-modal:has-text("风险检测")',
+                    '.arco-modal:has-text("内容检测")',
+                    '.arco-modal:has-text("基础检测")',
+                    '.arco-modal:has-text("全面检测")',
+                    '[role="dialog"]:has-text("请选择内容检测方式")',
+                    '[role="dialog"]:has-text("基础检测")',
+                    '[role="dialog"]:has-text("全面检测")',
+                ].join(', ')
+            ).first();
+            if (await riskModal.isVisible().catch(()=>false)) {
+                console.log("⚠️ 发现风险检测/内容检测弹窗...");
+
+                // 优先级 1：直接命中"仅基础检测"按钮（新版主流形态）。
+                const basicOnlyBtn = riskModal.locator('button:has-text("仅基础检测")').first();
+                // 优先级 2：旧版 radio 形态 + 独立"确定"按钮。
+                const basicRadio = riskModal.locator('.arco-radio:has-text("基础检测"), text=基础检测').first();
+                // 兜底：任意含"基础检测"文字的按钮（避免 selector 没列全的极端文案）。
+                const basicBtnFallback = riskModal.locator('button:has-text("基础检测")').first();
+
+                let acted = false;
+                let isNewFlow = false; // 新版点完按钮自动推进，不需要再等检测/再点发布。
+
+                if (await basicOnlyBtn.isVisible().catch(()=>false)) {
+                    console.log("👉 点击【仅基础检测】按钮（新版形态）...");
+                    await basicOnlyBtn.click();
+                    acted = true;
+                    isNewFlow = true;
+                } else if (await basicRadio.isVisible().catch(()=>false)) {
+                    console.log("👉 点击【基础检测】radio（旧版形态）...");
+                    await basicRadio.click();
+                    await targetPage.waitForTimeout(500);
+                    const confirmBtn = riskModal.locator(
+                        'button:has-text("确定"), button:has-text("开始检测"), button:has-text("确认"), button:has-text("下一步")'
+                    ).first();
+                    if (await confirmBtn.isVisible().catch(()=>false)) {
+                        console.log("👉 点击确认按钮启动检测...");
+                        await confirmBtn.click();
+                    }
+                    acted = true;
+                } else if (await basicBtnFallback.isVisible().catch(()=>false)) {
+                    console.log("👉 命中含【基础检测】文字的按钮（兜底）...");
+                    await basicBtnFallback.click();
+                    acted = true;
+                    isNewFlow = true;
                 }
 
-                // If "确认发布" exists, select "否" for AI first
-                const confirmPublishBtn = btns.find(b => b.innerText.trim() === '确认发布' || b.innerText.trim() === '提交');
-                if (confirmPublishBtn) {
-                    const noAi = Array.from(document.querySelectorAll('.arco-radio')).find(r => r.innerText.includes('否'));
-                    if (noAi) noAi.click();
-                    // Click after a tiny delay
-                    setTimeout(() => confirmPublishBtn.click(), 500);
+                if (!acted) {
+                    // 实在识别不到基础检测入口才取消，避免误触发"全面检测"延迟。
+                    const cancelBtn = riskModal.locator('button:has-text("取消")').first();
+                    if (await cancelBtn.isVisible().catch(()=>false)) {
+                        console.log("⚠️ 未识别基础检测入口，点击取消跳过本弹窗以待重试。");
+                        await cancelBtn.click();
+                    }
                 }
-                
-                // If there's a typo warning
-                if (dialogText.includes('检测到你还有错别字未修改')) {
-                    const submitBtn = btns.find(b => b.innerText.trim() === '提交');
-                    if (submitBtn) submitBtn.click();
+
+                // 等检测弹窗自动隐藏（新版点完按钮立刻关闭并弹出"发布设置"；旧版会有检测中状态）。
+                await riskModal.waitFor({ state: 'hidden', timeout: 15000 }).catch(()=>{
+                    console.log("ℹ️  检测弹窗未在 15s 内隐藏；继续尝试。");
+                });
+
+                if (!isNewFlow) {
+                    // 旧版需要等检测结果反馈；新版无此环节，直接进入下一弹窗。
+                    console.log("⏳ 等待旧版风险检测结果文案（最多 45s）...");
+                    try {
+                        await targetPage.waitForSelector(
+                            'text=检测暂无风险, text=检测通过, text=暂无风险, text=无风险, text=检测完成',
+                            { timeout: 45000 }
+                        );
+                        console.log("✅ 风险检测完成且无风险！");
+                    } catch (e) {
+                        console.log("⚠️ 未捕获明确的通过文案；继续按弹窗演进处理。");
+                    }
+                    // 旧版可能需要再点一次发布/下一步推进。
+                    const nextBtn = targetPage.locator(
+                        'button:has-text("发布"), button:has-text("下一步")'
+                    ).first();
+                    if (await nextBtn.isVisible().catch(()=>false)) {
+                        await nextBtn.click({ timeout: 5000 }).catch((err) => {
+                            console.log("ℹ️  跳过点击发布/下一步：" + (err.message || err).slice(0, 120));
+                        });
+                    }
                 }
-            });
+                await targetPage.waitForTimeout(1000);
+            }
+
+            // Handle Publish settings (AI declaration)
+            // 同步兼容 .arco-modal 与 [role="dialog"] 两种容器。
+            const publishModal = targetPage.locator(
+                '.arco-modal:has-text("发布设置"), [role="dialog"]:has-text("发布设置")'
+            ).first();
+            if (await publishModal.isVisible().catch(()=>false)) {
+                console.log("👉 发现发布设置，选择【否】不使用AI...");
+                // 新版 radiogroup 不一定有 .arco-radio class，用多种 selector 兜底。
+                const noAiRadio = publishModal.locator(
+                    '.arco-radio:has-text("否"), label:has-text("否"), [role="radio"]:has-text("否")'
+                ).first();
+                if (await noAiRadio.isVisible().catch(()=>false)) {
+                    await noAiRadio.click();
+                    await targetPage.waitForTimeout(500);
+                }
+
+                console.log("🚀 点击【确认发布】按钮！");
+                const confirmPublishBtn = publishModal.locator('button:has-text("确认发布"), button:has-text("提交")').first();
+                if (await confirmPublishBtn.isVisible().catch(()=>false)) {
+                    await confirmPublishBtn.click();
+                    console.log("✅ 发布提交完成，等待网络响应...");
+                    await targetPage.waitForTimeout(3000);
+                    break;
+                }
+            }
         }
 
         console.log("✅ 脚本执行完毕。");
